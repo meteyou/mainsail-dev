@@ -1,5 +1,5 @@
 {
-    "_last_update": "13",
+    "_last_update": "14",
     "App": {
         "Notifications": {
             "DependencyDescription": "Die momentane {name} Version unterstützt nicht alle Funktionen von Mainsail. Aktualisiere {name} mindestens auf Version {neededVersion}.",
