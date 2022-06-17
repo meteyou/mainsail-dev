@@ -8,10 +8,16 @@ on:
 jobs:
   check_translations:
     runs-on: ubuntu-latest
+    env:
+      OUTPUT: ''
     steps:
+      - name: Install jq
+        run: sudo apt install -y jq
+
       - name: Fetch repo
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install node
@@ -29,8 +35,22 @@ jobs:
           files: 'src/locales/*.json'
 
       - name: Run i18n-extract on changed locale files
+        id: i18n-extract
         run: |
+          mkdir ./i18n-extract
+          echo ${{ steps.changed-files.outputs.all_changed_files }}
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-            echo "$file was changed"
+            npm run i18n-extract -- --languageFiles=`${{ github.workspace }}/src/locales/${file##*/}` --output=i18n-extract/${file##*/}
+            MISSING=$(cat i18n-extract/${file##*/} | jq '.missingKeys | length')
+            UNUSED=$(cat i18n-extract/${file##*/} | jq '.unusedKeys | length')
+            echo "$OUTPUT\n${file##*/}: Missing: ${MISSING}, Unused: ${UNUSED}" >> $OUTPUT
+            echo "${file}: Missing: ${MISSING}, Unused: ${UNUSED}"
           done
-          npm run i18n-extract -- --languageFiles='./src/locales/fr.json' --output=i18n-extract/fr.json
+
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v1
+        with:
+          message: |
+            Hello world ! :wave:
+            ${{ env.OUTPUT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
