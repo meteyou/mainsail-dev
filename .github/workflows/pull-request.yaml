@@ -1,8 +1,7 @@
 name: PR
 
 on:
-  pull_request_target:
-    types: [synchronize, opened, reopened]
+  pull_request:
     branches:
       - '**'
 
