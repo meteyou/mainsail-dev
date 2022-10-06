@@ -9,7 +9,7 @@ on:
 
 # Allow to stop obsolete workflows
 concurrency:
-    group: ci-tests-${{ github.ref }}-PR
+    group: ci-tests-${{ github.ref }}-PRT
     cancel-in-progress: true
 
 jobs:
@@ -17,19 +17,18 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Debs-Cache
-              uses: mainsail-crew/mainsail-actions/debs-cache@master
+              uses: ./.github/actions/debs-cache
+
     check-locale:
         needs: [debs-cache]
         runs-on: ubuntu-latest
         steps:
             - name: Check locale
-              uses: mainsail-crew/mainsail-actions/check-locale@master
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
+              uses: ./.github/actions/check-locale
 
     size-report:
         needs: [debs-cache]
         runs-on: ubuntu-latest
         steps:
             - name: Size report
-              uses: mainsail-crew/mainsail-actions/size-report@master
+              uses: ./.github/actions/size-report
