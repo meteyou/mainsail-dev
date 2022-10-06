@@ -1,0 +1,39 @@
+name: '🏗 Build'
+author: 'Stefan Dej (meteyou)'
+description: 'Build Mainsail zip'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    - name: Cache node_modules
+      uses: actions/cache@v3
+      id: cache
+      with:
+        path: node_modules/
+        key: mainsail-node-modules-${{ hashFiles('package-lock.json') }}
+
+    - name: Build
+      shell: bash
+      run: npm run build
+
+    - name: Cache dist
+      uses: actions/cache@v3
+      id: cache-dist
+      with:
+        path: dist/
+        key: mainsail-dist-${{ github.run_id }}-${{ github.run_number }}
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: mainsail-latest
+        path: ${{ github.workspace }}/dist/mainsail.zip
