@@ -17,18 +17,18 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Debs-Cache
-              uses: ./.github/actions/debs-cache
+              uses: ./.github/actions/debs-cache/
 
     check-locale:
         needs: [debs-cache]
         runs-on: ubuntu-latest
         steps:
             - name: Check locale
-              uses: ./.github/actions/check-locale
+              uses: ./.github/actions/check-locale/
 
     size-report:
         needs: [debs-cache]
         runs-on: ubuntu-latest
         steps:
             - name: Size report
-              uses: ./.github/actions/size-report
+              uses: ./.github/actions/size-report/
