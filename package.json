@@ -38,6 +38,7 @@
         "axios": "^0.27.0",
         "codemirror": "^6.0.1",
         "core-js": "^3.16.0",
+        "deepmerge": "^4.2.2",
         "echarts": "^5.2.2",
         "echarts-gl": "^2.0.8",
         "js-sha256": "^0.9.0",

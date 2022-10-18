@@ -2,7 +2,6 @@ import Vue from 'vue'
 import { getDefaultState } from './index'
 import { MutationTree } from 'vuex'
 import { PrinterState } from '@/store/printer/types'
-import { setDataDeep } from '@/plugins/helpers'
 
 export const mutations: MutationTree<PrinterState> = {
     reset(state) {
@@ -20,7 +19,18 @@ export const mutations: MutationTree<PrinterState> = {
     },
 
     setData(state, payload) {
-        setDataDeep(state, payload)
+        Object.keys(payload).forEach((module) => {
+            const oldModuleState = state[module] ?? null
+
+            if (oldModuleState === null) {
+                Vue.set(state, module, payload[module])
+                return
+            }
+
+            Object.keys(payload[module]).forEach((key) => {
+                if (oldModuleState[key] !== payload[module][key]) Vue.set(state[module], key, payload[module][key])
+            })
+        })
     },
 
     setBedMeshProfiles(state, payload) {

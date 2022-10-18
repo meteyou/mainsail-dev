@@ -106,3 +106,8 @@ export const timelapseConsoleFilters = [
  * List of hidden root directories in config files panel
  */
 export const hiddenRootDirectories = ['gcodes', 'timelapse', 'timelapse_frames']
+
+/*
+ * List of printer objects which should update in realtime
+ */
+export const realtimePrinterObjects = ['motion_report']

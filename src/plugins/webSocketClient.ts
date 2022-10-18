@@ -1,6 +1,8 @@
 import { Store } from 'vuex'
 import _Vue from 'vue'
 import { RootState } from '@/store/types'
+import { realtimePrinterObjects } from '@/store/variables'
+import deepmerge from 'deepmerge'
 
 export class WebSocketClient {
     url = ''
@@ -12,6 +14,7 @@ export class WebSocketClient {
     timerId: number | null = null
     store: Store<RootState> | null = null
     waits: Wait[] = []
+    cache: PrinterObjectsCache | null = null
 
     constructor(options: WebSocketPluginOptions) {
         this.url = options.url
@@ -71,7 +74,41 @@ export class WebSocketClient {
 
             // pass it to socket/onMessage, if no wait exists
             if (!wait) {
-                this.store?.dispatch('socket/onMessage', data)
+                if (data.method !== 'notify_status_update') {
+                    this.store?.dispatch('socket/onMessage', data)
+                    return
+                }
+
+                const [printerData, eventtime] = data.params
+                const timestamp = eventtime ? eventtime * 1000 : Date.now()
+
+                const realtimeObjects: PrinterObjectsCache = { timestamp: 0, printerObjects: {} }
+                realtimePrinterObjects.forEach((key) => {
+                    if (key in printerData) {
+                        realtimeObjects.printerObjects[key] = printerData[key]
+
+                        delete printerData[key]
+                    }
+                })
+                if (Object.keys(realtimeObjects).length)
+                    this.store?.dispatch('printer/getData', realtimeObjects.printerObjects)
+
+                if (!this.cache) {
+                    this.cache = {
+                        timestamp,
+                        printerObjects: {},
+                    }
+                }
+
+                this.cache.printerObjects = deepmerge(this.cache.printerObjects, printerData, {
+                    arrayMerge: (_, newArray) => newArray,
+                })
+
+                if (timestamp - this.cache.timestamp >= 1000) {
+                    this.store?.dispatch('printer/getData', this.cache.printerObjects)
+                    this.cache = null
+                }
+
                 return
             }
 
@@ -170,4 +207,11 @@ interface emitOptions {
     action?: string | null
     actionPayload?: Params
     loading?: string | null
+}
+
+interface PrinterObjectsCache {
+    timestamp: number
+    printerObjects: {
+        [key: string]: any
+    }
 }
