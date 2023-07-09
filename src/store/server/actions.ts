@@ -212,10 +212,10 @@ export const actions: ActionTree<ServerState, RootState> = {
         // convert Creality message outputs to default error messages
         events = events.map((event) => {
             try {
-                const json = JSON.parse(event.message)
+                const json: { code: string; msg: string; values: string[] } = JSON.parse(event.message)
 
                 return {
-                    message: `${json.message} (${json.key})`,
+                    message: `${json.msg} (${json.code})`,
                     time: event.time,
                     type: event.type,
                 }
