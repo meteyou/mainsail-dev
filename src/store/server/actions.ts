@@ -208,7 +208,22 @@ export const actions: ActionTree<ServerState, RootState> = {
     getGcodeStore({ commit, dispatch, rootGetters }, payload) {
         commit('clearGcodeStore')
 
-        let events: ServerStateEvent[] = payload.gcode_store
+        let events: { message: string; time: number; type: 'command' | 'respond' }[] = payload.gcode_store
+        // convert Creality message outputs to default error messages
+        events = events.map((event) => {
+            try {
+                const json = JSON.parse(event.message)
+
+                return {
+                    message: `${json.message} (${json.key})`,
+                    time: event.time,
+                    type: event.type,
+                }
+            } catch (_) {
+                return event
+            }
+        })
+
         const filters = rootGetters['gui/console/getConsolefilterRules']
         filters.forEach((filter: string) => {
             try {
@@ -226,11 +241,7 @@ export const actions: ActionTree<ServerState, RootState> = {
                 return true
             }
 
-            if (event.time && event.time * 1000 < cleared_since) {
-                return false
-            }
-
-            return !(event.date && new Date(event.date).valueOf() < cleared_since)
+            return !(event.time && event.time * 1000 < cleared_since)
         })
 
         commit('setGcodeStore', events)
