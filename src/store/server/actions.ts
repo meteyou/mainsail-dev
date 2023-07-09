@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import router from '@/plugins/router'
 import { ActionTree } from 'vuex'
-import { ServerState, ServerStateEvent } from '@/store/server/types'
+import { ServerState } from '@/store/server/types'
 import { camelize, formatConsoleMessage } from '@/plugins/helpers'
 import { RootState } from '@/store/types'
 import { initableServerComponents } from '@/store/variables'
@@ -189,7 +189,17 @@ export const actions: ActionTree<ServerState, RootState> = {
 
     checkKlippyState({ commit, dispatch }, payload: { state: string; state_message: string | null }) {
         commit('setKlippyState', payload.state)
-        commit('setKlippyMessage', payload.state_message)
+
+        let state_message = payload.state_message
+        try {
+            let tmpMessage = payload.state_message
+            if (tmpMessage?.startsWith('// ')) tmpMessage = tmpMessage.slice(3)
+            const json = JSON.parse(tmpMessage ?? '')
+            state_message = `${json.msg} (${json.code})`
+            // eslint-disable-next-line no-empty
+        } catch (_) {}
+
+        commit('setKlippyMessage', state_message)
 
         if (payload.state !== 'ready') {
             dispatch('startKlippyStateInterval')
@@ -212,7 +222,9 @@ export const actions: ActionTree<ServerState, RootState> = {
         // convert Creality message outputs to default error messages
         events = events.map((event) => {
             try {
-                const json: { code: string; msg: string; values: string[] } = JSON.parse(event.message)
+                let tmpMessage = event.message
+                if (tmpMessage.startsWith('// ')) tmpMessage = tmpMessage.slice(3)
+                const json: { code: string; msg: string; values: string[] } = JSON.parse(tmpMessage)
 
                 return {
                     message: `${json.msg} (${json.code})`,
@@ -263,6 +275,14 @@ export const actions: ActionTree<ServerState, RootState> = {
         if ('message' in payload) message = payload.message
         else if ('result' in payload) message = payload.result
         else if ('error' in payload) message = message.error.message
+
+        try {
+            let tmpMessage = message
+            if (tmpMessage.startsWith('// ')) tmpMessage = tmpMessage.slice(3)
+            const json = JSON.parse(tmpMessage)
+            message = `${json.msg} (${json.code})`
+            // eslint-disable-next-line no-empty
+        } catch (_) {}
 
         let formatMessage = formatConsoleMessage(message)
 

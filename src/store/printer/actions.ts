@@ -27,11 +27,21 @@ export const actions: ActionTree<PrinterState, RootState> = {
     },
 
     getInfo({ commit, dispatch }, payload) {
+        let state_message = ''
+        try {
+            let tmpMessage = payload.state_message
+            if (tmpMessage.startsWith('// ')) tmpMessage = tmpMessage.slice(3)
+            const json = JSON.parse(tmpMessage)
+            state_message = `${json.msg} (${json.code})`
+        } catch (_) {
+            state_message = payload.state_message
+        }
+
         commit(
             'server/setData',
             {
                 klippy_state: payload.state,
-                klippy_message: payload.state_message,
+                klippy_message: state_message,
             },
             { root: true }
         )
