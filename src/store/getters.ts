@@ -67,10 +67,10 @@ export const getters: GetterTree<RootState, any> = {
         return state.gui?.general.printername ?? state.printer?.hostname ?? 'Mainsail'
     },
 
-    getDependencies: (state) => {
+    getDependencies: () => {
         const dependencies: RootStateDependency[] = []
 
-        const klipperVersion = state.printer?.software_version ?? ''
+        /*const klipperVersion = state.printer?.software_version ?? ''
         const klipperVersionSplits = klipperVersion.split('-')
         const klipperVersionRelease = klipperVersionSplits[0] ?? ''
         const klipperVersionBuild = parseInt(klipperVersionSplits[1] ?? 0)
@@ -112,7 +112,7 @@ export const getters: GetterTree<RootState, any> = {
                 installedVersion: moonrakerVersion,
                 neededVersion: minMoonrakerVersion,
             })
-        }
+        }*/
 
         return dependencies
     },
