@@ -96,20 +96,24 @@
                         </v-list-item-action>
                     </v-list-item>
                 </template>
-                <v-divider class="mt-0"></v-divider>
-                <v-subheader class="pt-2" style="height: auto">{{ $t('App.TopCornerMenu.HostControl') }}</v-subheader>
-                <v-list-item class="minheight30 pr-2" link @click="checkDialog(hostReboot, 'host', 'reboot')">
-                    <v-list-item-title>{{ $t('App.TopCornerMenu.Reboot') }}</v-list-item-title>
-                    <v-list-item-action class="my-0 d-flex flex-row" style="min-width: auto">
-                        <v-icon class="mr-2" small>{{ mdiPower }}</v-icon>
-                    </v-list-item-action>
-                </v-list-item>
-                <v-list-item class="minheight30 pr-2" link @click="checkDialog(hostShutdown, 'host', 'shutdown')">
-                    <v-list-item-title>{{ $t('App.TopCornerMenu.Shutdown') }}</v-list-item-title>
-                    <v-list-item-action class="my-0 d-flex flex-row" style="min-width: auto">
-                        <v-icon class="mr-2" small>{{ mdiPower }}</v-icon>
-                    </v-list-item-action>
-                </v-list-item>
+                <template v-if="false">
+                    <v-divider class="mt-0"></v-divider>
+                    <v-subheader class="pt-2" style="height: auto">
+                        {{ $t('App.TopCornerMenu.HostControl') }}
+                    </v-subheader>
+                    <v-list-item class="minheight30 pr-2" link @click="checkDialog(hostReboot, 'host', 'reboot')">
+                        <v-list-item-title>{{ $t('App.TopCornerMenu.Reboot') }}</v-list-item-title>
+                        <v-list-item-action class="my-0 d-flex flex-row" style="min-width: auto">
+                            <v-icon class="mr-2" small>{{ mdiPower }}</v-icon>
+                        </v-list-item-action>
+                    </v-list-item>
+                    <v-list-item class="minheight30 pr-2" link @click="checkDialog(hostShutdown, 'host', 'shutdown')">
+                        <v-list-item-title>{{ $t('App.TopCornerMenu.Shutdown') }}</v-list-item-title>
+                        <v-list-item-action class="my-0 d-flex flex-row" style="min-width: auto">
+                            <v-icon class="mr-2" small>{{ mdiPower }}</v-icon>
+                        </v-list-item-action>
+                    </v-list-item>
+                </template>
             </v-list>
         </v-menu>
         <v-dialog v-model="dialogPowerDeviceChange.show" width="400" :fullscreen="isMobile">
