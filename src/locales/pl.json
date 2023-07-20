@@ -134,7 +134,7 @@
             "Cancel": "Anuluj",
             "DoYouWantToStartFilename": "Czy chcesz rozpocząć druk {filename}?",
             "Headline": "Rozpocznij",
-            "Print": "wydruk",
+            "Print": "drukuj",
             "Timelapse": "Timelapse"
         }
     },
@@ -823,7 +823,6 @@
             "DbHistoryTotals": "Historia łącznie",
             "DbTimelapseSettings": "Ustawienia timelapse",
             "DbView": "Ustawienia",
-            "DbWebcams": "Kamery",
             "EstimateValues": {
                 "Filament": "Filament",
                 "File": "Plik",
