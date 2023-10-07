@@ -142,8 +142,7 @@
         "Empty": "Empty",
         "HideTemperatures": "Hide temperatures",
         "HideTimelapse": "Hide Timelapse",
-        "SendCode": "Send code...",
-        "SetupConsole": "Setup Console"
+        "SendCode": "Send code..."
     },
     "Dialogs": {
         "StartPrint": {
