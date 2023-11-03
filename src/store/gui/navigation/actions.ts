@@ -23,6 +23,6 @@ export const actions: ActionTree<GuiNavigationState, RootState> = {
     changeVisibility({ commit, dispatch }, payload: GuiNavigationStateEntry) {
         commit('changeVisibility', payload)
         dispatch('upload')
-        // this is just a test
+        // this is just a test 2
     },
 }
