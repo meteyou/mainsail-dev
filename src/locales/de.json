@@ -518,7 +518,7 @@
             "ThesePackagesCanBeUpgrade": "Diese Systempakete können aktualisiert werden:",
             "Unknown": "unbekannt",
             "Update": "update",
-            "UpdateAll": "Alle Komponenten updaten",
+            "UpdateAll": "Alle Komponenten updaten bla",
             "UpdateManager": "Update Manager",
             "UpdateWarning": "Aktualisierungswarnung: {name}",
             "Upgrade": "upgrade",
