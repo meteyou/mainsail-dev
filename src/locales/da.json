@@ -7,7 +7,7 @@
             },
             "DependencyDescription": "Den nuværende version af {name} understøtter ikke alle funktioner i Mainsail. Opdatér {name} til minimum version: {neededVersion}.",
             "DependencyName": "Afhængighed: {name}",
-            "DismissAll": "Fjern alle",
+            "DismissAll": "Fjern alleasdf",
             "KlipperWarnings": {
                 "DeprecatedOption": "Funktionen \"{option}\" i sektion \"{section}\" er forældet.",
                 "DeprecatedOptionHeadline": "Forældet Klipper mulighed",
