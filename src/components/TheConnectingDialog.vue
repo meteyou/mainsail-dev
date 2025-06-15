@@ -103,9 +103,6 @@
 import Component from 'vue-class-component'
 import { Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
-import ConnectionStatus from "@/components/ui/ConnectionStatus.vue";
-import axios from "axios";
-
 import ThemeMixin from '@/components/mixins/theme'
 import ConnectionStatus from '@/components/ui/ConnectionStatus.vue'
 import { mdiConnection, mdiHelp } from '@mdi/js'
