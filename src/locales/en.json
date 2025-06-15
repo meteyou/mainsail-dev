@@ -156,9 +156,7 @@
         "Connecting": "Connecting to {host}",
         "ErrorMessage": "Error message: {message}",
         "Failed": "Connection failed",
-        "CannotConnectTo": "Cannot connect to Moonraker ({host}).",
         "TryAgain": "try again",
-        "CheckMoonrakerLog": "If this message appears repeatedly, please have a look in the log file located at:",
 		"Login": "Login",
 		"Username": "Username",
 		"Password": "Password",
@@ -166,7 +164,6 @@
 		"WrongLogin": "Wrong username or password",
         "Help": "Help",
         "Initializing": "Initializing",
-        "TryAgain": "try again"
     },
     "Console": {
         "CommandList": "Command list",
