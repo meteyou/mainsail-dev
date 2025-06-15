@@ -1,127 +1,111 @@
-<style scoped>
-
-</style>
+<style scoped></style>
 
 <template>
-    <v-card class="mb-6" v-if="socketIsConnected">
-        <v-toolbar flat dense >
-            <v-toolbar-title>
-                <span class="subheading">
-                    <v-icon left>mdi-webcam</v-icon> {{ $t('Panels.WebcamPanel.Headline')}}
-                </span>
-            </v-toolbar-title>
-            <v-spacer></v-spacer>
-            <v-item-group v-if="this.webcams.length > 1">
-                <v-menu :offset-y="true" title="Webcam">
-                    <template v-slot:activator="{ on, attrs }">
-                        <v-btn small class="px-2 minwidth-0" color="primary" v-bind="attrs" v-on="on">
-                            <v-icon small v-if="'icon' in currentCam" class="mr-2">{{ currentCam.icon }}</v-icon>
-                            {{ 'name' in currentCam ? currentCam.name : "unknown" }}
-                            <v-icon small>mdi-menu-down</v-icon>
-                        </v-btn>
-                    </template>
-                    <v-list dense class="py-0">
-                        <v-list-item link @click="currentCamName = 'all'">
-                            <v-list-item-icon class="mr-0">
-                                <v-icon small>mdi-view-grid</v-icon>
-                            </v-list-item-icon>
-                            <v-list-item-content>
-                                <v-list-item-title>{{ $t('Panels.WebcamPanel.All') }}</v-list-item-title>
-                            </v-list-item-content>
-                        </v-list-item>
-                        <v-list-item v-for="webcam of this.webcams" v-bind:key="webcam.name" link @click="currentCamName = webcam.name">
-                            <v-list-item-icon class="mr-0">
-                                <v-icon small>{{ webcam.icon }}</v-icon>
-                            </v-list-item-icon>
-                            <v-list-item-content>
-                                <v-list-item-title v-text="webcam.name"></v-list-item-title>
-                            </v-list-item-content>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-            </v-item-group>
-        </v-toolbar>
-        <v-card-text class="px-0 py-0 content d-inline-block">
+    <panel
+        v-if="socketIsConnected"
+        :icon="mdiWebcam"
+        :title="$t('Panels.WebcamPanel.Headline')"
+        :collapsible="$route.fullPath !== '/cam'"
+        card-class="webcam-panel"
+        :margin-bottom="currentPage !== 'page'">
+        <template #buttons>
+            <v-menu v-if="showSwitch" :offset-y="true">
+                <template #activator="{ on, attrs }">
+                    <v-btn text tile v-bind="attrs" v-on="on">
+                        <v-icon v-if="'icon' in currentCam" small class="mr-2">
+                            {{ convertWebcamIcon(currentCam.icon) }}
+                        </v-icon>
+                        <span class="d-none d-md-block">{{ 'name' in currentCam ? currentCam.name : 'unknown' }}</span>
+                        <v-icon small>{{ mdiMenuDown }}</v-icon>
+                    </v-btn>
+                </template>
+                <v-list dense class="py-0">
+                    <v-list-item link @click="currentCamId = 'all'">
+                        <v-list-item-icon class="mr-2">
+                            <v-icon small class="mt-1">{{ mdiViewGrid }}</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-content>
+                            <v-list-item-title>{{ $t('Panels.WebcamPanel.All') }}</v-list-item-title>
+                        </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item v-for="webcam of webcams" :key="webcam.name" link @click="currentCamId = webcam.name">
+                        <v-list-item-icon class="mr-2">
+                            <v-icon small class="mt-1">{{ convertWebcamIcon(webcam.icon) }}</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-content>
+                            <v-list-item-title v-text="webcam.name" />
+                        </v-list-item-content>
+                    </v-list-item>
+                </v-list>
+            </v-menu>
+        </template>
+        <v-card-text v-if="webcams.length" class="px-0 py-0 content d-inline-block">
             <v-row>
-                <v-col class="pb-0" style="position: relative;">
-                    <template v-if="'service' in this.currentCam && this.currentCam.service === 'grid'">
-                        <webcam-grid :webcams="this.webcams"></webcam-grid>
-                    </template>
-                    <template v-else-if="'service' in this.currentCam && this.currentCam.service === 'mjpegstreamer'">
-                        <webcam-mjpegstreamer :cam-settings="this.currentCam"></webcam-mjpegstreamer>
-                    </template>
-                    <template v-else-if="'service' in this.currentCam && this.currentCam.service === 'mjpegstreamer-adaptive'">
-                        <webcam-mjpegstreamer-adaptive :cam-settings="this.currentCam"></webcam-mjpegstreamer-adaptive>
-                    </template>
-                    <template v-else-if="'service' in this.currentCam && this.currentCam.service === 'uv4l-mjpeg'">
-                        <webcam-uv4l-mjpeg :cam-settings="this.currentCam"></webcam-uv4l-mjpeg>
-                    </template>
-                    <template v-else-if="'service' in this.currentCam && this.currentCam.service === 'ipstream'">
-                        <webcam-ipstreamer :cam-settings="this.currentCam"></webcam-ipstreamer>
-                    </template>
-                    <template v-else>
-                        <p class="text-center py-3 font-italic">{{ $t('Panels.WebcamPanel.UnknownWebcamService') }}</p>
-                    </template>
+                <v-col class="pb-0" style="position: relative">
+                    <webcam-wrapper :webcam="currentCam" :page="currentPage" />
                 </v-col>
             </v-row>
         </v-card-text>
-    </v-card>
+        <v-card-text v-else>
+            <p class="text-center mb-0 text--disabled">{{ $t('Panels.WebcamPanel.NoWebcam') }}</p>
+        </v-card-text>
+    </panel>
 </template>
 
 <script lang="ts">
-import Mjpegstreamer from "@/components/webcams/Mjpegstreamer.vue"
-import MjpegstreamerAdaptive from "@/components/webcams/MjpegstreamerAdaptive.vue"
-import Ipstreamer from "@/components/webcams/Ipstreamer.vue"
-import Uv4lMjpeg from "@/components/webcams/Uv4lMjpeg.vue"
-import WebcamGrid from "@/components/webcams/WebcamGrid.vue"
-import Component from "vue-class-component";
-import {Mixins} from "vue-property-decorator";
-import BaseMixin from "../mixins/base";
-import {GuiStateWebcam} from "@/store/gui/types";
+import Component from 'vue-class-component'
+import { Mixins, Prop } from 'vue-property-decorator'
+import BaseMixin from '../mixins/base'
+import Panel from '@/components/ui/Panel.vue'
+import { GuiWebcamStateWebcam } from '@/store/gui/webcams/types'
+import { mdiMenuDown, mdiViewGrid, mdiWebcam } from '@mdi/js'
+import WebcamMixin from '@/components/mixins/webcam'
 
 @Component({
     components: {
-        'webcam-mjpegstreamer': Mjpegstreamer,
-        'webcam-mjpegstreamer-adaptive': MjpegstreamerAdaptive,
-        'webcam-ipstreamer': Ipstreamer,
-        'webcam-uv4l-mjpeg': Uv4lMjpeg,
-        'webcam-grid': WebcamGrid,
-    }
+        Panel,
+    },
 })
-export default class WebcamPanel extends Mixins(BaseMixin) {
+export default class WebcamPanel extends Mixins(BaseMixin, WebcamMixin) {
+    @Prop({ default: 'dashboard' }) declare currentPage?: string
 
-    get webcams(): GuiStateWebcam[] {
-        return this.$store.getters["gui/getWebcams"]
+    mdiWebcam = mdiWebcam
+    mdiMenuDown = mdiMenuDown
+    mdiViewGrid = mdiViewGrid
+
+    get webcams(): GuiWebcamStateWebcam[] {
+        return this.$store.getters['gui/webcams/getWebcams']
     }
 
-    get currentCamName(): string {
-        let currentCamName = this.$store.state.gui.webcam.selectedCam
-        if (currentCamName !== undefined && this.webcams.findIndex((webcam: GuiStateWebcam) => webcam.name === currentCamName) !== -1)
-            return currentCamName
-
-        if (currentCamName !== undefined && Array.isArray(this.webcams) && this.webcams.length === 1)
-            return this.webcams[0].name
-
-        return "all"
+    get showSwitch() {
+        return this.webcams.length > 1
     }
 
-    set currentCamName(newVal: string) {
-        this.$store.dispatch('gui/saveSetting', { name: "webcam.selectedCam", value: newVal })
+    // id changed to name with the refactoring of using moonraker webcam API
+    get currentCamId(): string {
+        if (this.webcams.length === 1) return this.webcams[0].name ?? 'all'
+
+        let currentCamId = this.$store.state.gui.view.webcam.currentCam[this.currentPage ?? ''] ?? 'all'
+        if (this.webcams.findIndex((webcam: GuiWebcamStateWebcam) => webcam.name === currentCamId) !== -1)
+            return currentCamId
+        else if (currentCamId !== undefined && this.webcams.length === 1) return this.webcams[0].name ?? ''
+        else return 'all'
+    }
+
+    set currentCamId(newVal: string) {
+        this.$store.dispatch('gui/setCurrentWebcam', { page: this.currentPage, value: newVal })
     }
 
     get currentCam(): any {
-        if (this.currentCamName === 'all') {
-            return {
-                name: this.$t('Panels.WebcamPanel.All'),
-                service: "grid",
-                icon: "mdi-view-grid",
-            }
-        } else {
-            const currentCam = this.webcams.findIndex((webcam: GuiStateWebcam) => webcam.name === this.currentCamName)
-            if (currentCam !== -1) return this.webcams[currentCam]
-        }
+        const cam = this.webcams.find((cam: GuiWebcamStateWebcam) => cam.name === this.currentCamId)
 
-        return {}
+        return (
+            cam ?? {
+                name: this.$t('Panels.WebcamPanel.All'),
+                service: 'grid',
+                icon: mdiViewGrid,
+            }
+        )
     }
 }
 </script>

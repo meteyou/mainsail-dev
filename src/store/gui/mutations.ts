@@ -1,155 +1,131 @@
 import Vue from 'vue'
 import { getDefaultState } from './index'
-import {MutationTree} from "vuex";
-import {GuiState} from "@/store/gui/types"
+import { MutationTree } from 'vuex'
+import { GuiState } from '@/store/gui/types'
+import { setDataDeep } from '@/plugins/helpers'
 
 export const mutations: MutationTree<GuiState> = {
-	reset(state) {
-		Object.assign(state, getDefaultState())
-	},
+    reset(state) {
+        Object.assign(state, getDefaultState())
+    },
 
-	setData(state, payload) {
-		// eslint-disable-next-line
-		const setDataDeep = (currentState: any, payload: any) => {
-			if (typeof payload === 'object') {
-				Object.keys(payload).forEach((key: string) => {
-					const value = payload[key]
+    setData(state, payload) {
+        setDataDeep(state, payload)
+    },
 
-					if (typeof value === 'object' && !Array.isArray(value) && key in currentState) {
-						setDataDeep(currentState[key], value)
-					} else Vue.set(currentState, key, value)
-				})
-			}
-		}
+    saveSetting(state, payload) {
+        // eslint-disable-next-line
+        const deepSet = (obj: any, is: string[] | string, value: any): any => {
+            if (is !== undefined && typeof is === 'string') return deepSet(obj, is.split('.'), value)
+            else if (is.length == 1 && value !== undefined) return (obj[is[0]] = value)
+            else if (is.length == 0) return obj
+            else if (!(is[0] in obj)) obj[is[0]] = {}
+            return deepSet(obj[is[0]], is.slice(1), value)
+        }
 
-		setDataDeep(state, payload)
-	},
+        deepSet(state, payload.name, payload.value)
+    },
 
-	saveSetting(state, payload) {
-		const deepSet = (obj:any, is:string[] | string, value:any):any => {
-			if (is !== undefined && typeof is === 'string')
-				return deepSet(obj,is.split('.'), value);
-			else if (is.length==1 && value !== undefined)
-				return obj[is[0]] = value;
-			else if (is.length==0)
-				return obj;
-			else
-				if (!(is[0] in obj)) obj[is[0]] = {}
-				return deepSet(obj[is[0]],is.slice(1), value);
-		}
+    setHeaterChartVisibility(state, payload) {
+        const index = state.view.tempchart.hiddenDataset.indexOf(payload.name.toUpperCase())
 
-		deepSet(state, payload.name, payload.value)
-	},
+        if (payload.hidden && index === -1) state.view.tempchart.hiddenDataset.push(payload.name.toUpperCase())
+        else if (payload.hidden !== true && index > -1) state.view.tempchart.hiddenDataset.splice(index, 1)
+    },
 
-	setHeaterChartVisibility(state, payload) {
-		const index = state.dashboard.hiddenTempChart.indexOf(payload.name.toUpperCase())
+    setGcodefilesMetadata(state, data) {
+        const array = [...state.view.gcodefiles.hideMetadataColumns]
+        const index = array.findIndex((value: string) => value === data.name)
 
-		if (payload.hidden && index === -1) state.dashboard.hiddenTempChart.push(payload.name.toUpperCase())
-		else if (payload.hidden !== true && index > -1) state.dashboard.hiddenTempChart.splice(index, 1)
-	},
+        if (data.value && index !== -1) array.splice(index, 1)
+        else if (!data.value && index === -1) array.push(data.name)
 
-	setGcodefilesMetadata(state, data) {
-		if (data.value && state.gcodefiles.hideMetadataColums.includes(data.name)) {
-			state.gcodefiles.hideMetadataColums.splice(state.gcodefiles.hideMetadataColums.indexOf(data.name), 1)
-		} else if (!data.value && !state.gcodefiles.hideMetadataColums.includes(data.name)) {
-			state.gcodefiles.hideMetadataColums.push(data.name)
-		}
-	},
+        Vue.set(state.view.gcodefiles, 'hideMetadataColumns', array)
+    },
 
-	setGcodefilesShowHiddenFiles(state, value) {
-		Vue.set(state.gcodefiles, "showHiddenFiles", value)
-	},
+    setGcodefilesShowHiddenFiles(state, value) {
+        Vue.set(state.view.gcodefiles, 'showHiddenFiles', value)
+    },
 
-	addPreset(state, payload) {
-		state.presets.push({
-			name: payload.name,
-			gcode: payload.gcode,
-			values: payload.values
-		})
-	},
+    setCurrentWebcam(state, payload) {
+        Vue.set(state.view.webcam.currentCam, payload.page, payload.value)
+    },
 
-	updatePreset(state, payload) {
-		if (state.presets[payload.index]) {
-			Vue.set(state.presets[payload.index], 'name', payload.name)
-			Vue.set(state.presets[payload.index], 'gcode', payload.gcode)
-			Vue.set(state.presets[payload.index], 'values', payload.values)
-		}
-	},
+    setHistoryColumns(state, data) {
+        if (data.value && state.view.history.hideColums.includes(data.name)) {
+            state.view.history.hideColums.splice(state.view.history.hideColums.indexOf(data.name), 1)
+        } else if (!data.value && !state.view.history.hideColums.includes(data.name)) {
+            state.view.history.hideColums.push(data.name)
+        }
+    },
 
-	deletePreset(state, payload) {
-		if (state.presets[payload.index]) {
-			state.presets.splice(payload.index, 1)
-		}
-	},
+    setHistoryHidePrintStatus(state, payload) {
+        Vue.set(state.view.history, 'hidePrintStatus', payload)
+    },
 
-	addConsoleFilter(state, payload) {
-		state.console.customFilters.push({
-			name: payload.name,
-			regex: payload.regex,
-			bool: payload.bool
-		})
-	},
+    addClosePanel(state, payload) {
+        const nonExpandPanels = [...state.dashboard.nonExpandPanels[payload.viewport]]
 
-	updateConsoleFilter(state, payload) {
-		if (state.console.customFilters[payload.index]) {
-			Vue.set(state.console.customFilters[payload.index], 'name', payload.name)
-			Vue.set(state.console.customFilters[payload.index], 'regex', payload.regex)
-			Vue.set(state.console.customFilters[payload.index], 'bool', payload.bool)
-		}
-	},
+        if (!nonExpandPanels.includes(payload.name)) {
+            nonExpandPanels.push(payload.name)
 
-	deleteConsoleFilter(state, payload) {
-		if (state.console.customFilters[payload.index]) {
-			state.console.customFilters.splice(payload.index, 1)
-		}
-	},
+            Vue.set(state.dashboard.nonExpandPanels, payload.viewport, nonExpandPanels)
+        }
+    },
 
-	addWebcam(state, payload) {
-		const newWebcam = {
-			name: payload.name,
-			icon: payload.icon,
-			service: payload.service,
-			targetFps: payload.targetFps,
-			url: payload.url,
-			flipX: payload.flipX,
-			flipY: payload.flipY,
-		}
+    removeClosePanel(state, payload) {
+        const nonExpandPanels = [...state.dashboard.nonExpandPanels[payload.viewport]]
+        const index = nonExpandPanels.indexOf(payload.name)
+        if (index > -1) {
+            nonExpandPanels.splice(index, 1)
 
-		state.webcam.configs.push(newWebcam)
-	},
+            Vue.set(state.dashboard.nonExpandPanels, payload.viewport, nonExpandPanels)
+        }
+    },
 
-	updateWebcam(state, payload) {
-		if (state.webcam.configs[payload.index]) {
-			const webcam = {...state.webcam}
-			webcam.configs[payload.index] = {
-				name: payload.name,
-				icon: payload.icon,
-				service: payload.service,
-				targetFps: payload.targetFps,
-				url: payload.url,
-				flipX: payload.flipX,
-				flipY: payload.flipY,
-			}
+    deleteFromDashboardLayout(state, payload) {
+        // @ts-ignore
+        const layoutArray = [...state.dashboard[payload.layoutname]]
+        layoutArray.splice(payload.index, 1)
+        Vue.set(state.dashboard, payload.layoutname, layoutArray)
+    },
 
-			Vue.set(state, 'webcam', webcam)
-		}
-	},
+    setChartDatasetStatus(state, payload: { objectName: string; dataset: string; value: boolean }) {
+        // set new value if object doesn't exist in view.tempchart.datasetSettings
+        if (!(payload.objectName in state.view.tempchart.datasetSettings)) {
+            const newVal: { [key: string]: any } = {}
+            newVal[payload.dataset] = payload.value
 
-	deleteWebcam(state, payload) {
-		if (state.webcam.configs[payload.index]) {
-			state.webcam.configs.splice(payload.index, 1)
-		}
-	},
+            Vue.set(state.view.tempchart.datasetSettings, payload.objectName, newVal)
+            return
+        }
 
-	setHistoryColumns(state, data) {
-		if (data.value && state.history.hideColums.includes(data.name)) {
-			state.history.hideColums.splice(state.history.hideColums.indexOf(data.name), 1)
-		} else if (!data.value && !state.history.hideColums.includes(data.name)) {
-			state.history.hideColums.push(data.name)
-		}
-	},
+        Vue.set(state.view.tempchart.datasetSettings[payload.objectName], payload.dataset, payload.value)
+    },
 
-	setHistoryHidePrintStatus(state, payload) {
-		Vue.set(state.history, 'hidePrintStatus', payload)
-	}
+    setDatasetAdditionalSensorStatus(state, payload: { objectName: string; dataset: string; value: boolean }) {
+        // set new value if object doesn't exist in view.tempchart.datasetSettings
+        if (!(payload.objectName in state.view.tempchart.datasetSettings)) {
+            const newVal: { additionalSensors: { [key: string]: any } } = { additionalSensors: {} }
+            newVal.additionalSensors[payload.dataset] = payload.value
+
+            Vue.set(state.view.tempchart.datasetSettings, payload.objectName, newVal)
+            return
+        }
+
+        // set new value if additionalSensor object doesn't exist in view.tempchart.datasetSettings
+        if (!('additionalSensors' in state.view.tempchart.datasetSettings[payload.objectName])) {
+            const newVal: { [key: string]: any } = {}
+            newVal[payload.dataset] = payload.value
+
+            Vue.set(state.view.tempchart.datasetSettings[payload.objectName], 'additionalSensors', newVal)
+            return
+        }
+
+        Vue.set(
+            state.view.tempchart.datasetSettings[payload.objectName].additionalSensors,
+            payload.dataset,
+            payload.value
+        )
+    },
 }

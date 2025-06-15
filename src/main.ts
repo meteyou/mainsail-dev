@@ -1,80 +1,103 @@
+import 'regenerator-runtime' // async polyfill used by the gcodeviewer
+import 'resize-observer-polyfill' // polyfill needed by the responsive class detection
 import Vue from 'vue'
 import App from '@/App.vue'
 import vuetify from '@/plugins/vuetify'
-import i18n from '@/plugins/i18n'
-import './plugins/longpress'
+import i18n, { setAndLoadLocale } from '@/plugins/i18n'
 import store from '@/store'
 import router from '@/plugins/router'
-import {WebSocketPlugin} from "@/plugins/webSocketClient";
-import {HttpClientPlugin} from "@/plugins/httpClient";
-
-Vue.config.productionTip = false;
-
+import { WebSocketPlugin } from '@/plugins/webSocketClient'
 // vue-observe-visibility
-import VueObserveVisibility from 'vue-observe-visibility'
-Vue.use(VueObserveVisibility)
-
-//vue-headful
-import vueHeadful from 'vue-headful'
-Vue.component('vue-headful', vueHeadful)
-
+import { ObserveVisibility } from 'vue-observe-visibility'
+//vue-meta
+import VueMeta from 'vue-meta'
 //vue-load-image
 import VueLoadImage from 'vue-load-image'
-Vue.component('vue-load-image', VueLoadImage)
+//vue-toast-notifications
+import VueToast from 'vue-toast-notification'
+import 'vue-toast-notification/dist/theme-sugar.css'
+//overlayerscrollbars-vue
+import { OverlayScrollbarsPlugin } from 'overlayscrollbars-vue'
+import 'overlayscrollbars/css/OverlayScrollbars.css'
+// Directives
+import './directives/longpress'
+import './directives/responsive-class'
 
-//vue-toast-notification
-import VueToast from 'vue-toast-notification';
-import 'vue-toast-notification/dist/theme-sugar.css';
+// Echarts
+import ECharts from 'vue-echarts'
+import { use } from 'echarts/core'
 
-//vue2-perfect-scrollbar
-import PerfectScrollbar from 'vue2-perfect-scrollbar'
-import 'vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css'
+// import ECharts modules manually to reduce bundle size
+import { SVGRenderer } from 'echarts/renderers'
+import { BarChart, LineChart, PieChart } from 'echarts/charts'
+import { DatasetComponent, GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
+// vue-resize
+import 'vue-resize/dist/vue-resize.css'
+// @ts-ignore
+import VueResize from 'vue-resize'
+import { defaultMode } from './store/variables'
 
-Vue.use(PerfectScrollbar)
+Vue.config.productionTip = false
+
+Vue.directive('observe-visibility', ObserveVisibility)
+
+Vue.use(VueMeta)
+
+Vue.component('VueLoadImage', VueLoadImage)
 
 Vue.use(VueToast, {
     duration: 3000,
 })
 
-//vue-echarts-ts
-import { plugin } from 'echarts-for-vue'
-import * as echarts from "echarts/core"
-Vue.use(plugin, { echarts })
-
-//load config.json and init vue
-fetch('/config.json')
-.then(res => res.json())
-.then(file => {
-    store.commit('socket/setData', file)
-
-    const websocketUrl = store.getters['socket/getWebsocketUrl']
-    Vue.use(WebSocketPlugin, {
-        url: websocketUrl,
-        store: store,
-    })
-
-    const url = store.getters['socket/getUrl']
-    Vue.use(HttpClientPlugin, {
-        url: url,
-        timeout: 1000,
-        store: store,
-    })
-
-    new Vue({
-      vuetify,
-      router,
-      store,
-      i18n,
-      render: h => h(App)
-    }).$mount('#app')
-
+const isSafari = navigator.userAgent.includes('Safari') && navigator.userAgent.search('Chrome') === -1
+const isTouch = 'ontouchstart' in window || (navigator.maxTouchPoints > 0 && navigator.maxTouchPoints !== 256)
+Vue.use(OverlayScrollbarsPlugin, {
+    className: 'os-theme-light',
+    scrollbars: {
+        visibility: 'auto',
+        autoHide: isSafari && isTouch ? 'scroll' : 'move',
+    },
 })
-.catch((error) => {
-    const p = document.createElement("p");
-    const content = document.createTextNode("config.json not found or cannot be decoded!");
-    p.appendChild(content);
-    document.getElementById('app')?.append(p);
-    window.console.error('Error:', error);
-});
 
+use([SVGRenderer, LineChart, BarChart, LegendComponent, PieChart, DatasetComponent, GridComponent, TooltipComponent])
+Vue.component('EChart', ECharts)
 
+Vue.use(VueResize)
+
+const initLoad = async () => {
+    try {
+        // get base url. by default, it is '/'
+        const base = import.meta.env.BASE_URL ?? '/'
+
+        //load config.json
+        const res = await fetch(`${base}config.json`)
+        const file = (await res.json()) as Record<string, unknown>
+
+        window.console.debug('Loaded config.json')
+
+        await store.dispatch('importConfigJson', file)
+        const locale = (file.defaultLocale ?? 'en') as string
+        await setAndLoadLocale(locale)
+
+        // Handle mode outside store init and before vue mount for consistency in dialog
+        const mode = file.defaultMode ?? defaultMode
+        vuetify.framework.theme.dark = mode !== 'light'
+    } catch (e) {
+        window.console.error('Failed to load config.json')
+        window.console.error(e)
+    }
+
+    const url = store.getters['socket/getWebsocketUrl']
+    Vue.use(WebSocketPlugin, { url, store })
+    if (store?.state?.instancesDB === 'moonraker') Vue.$socket.connect()
+}
+
+initLoad().then(() =>
+    new Vue({
+        vuetify,
+        router,
+        store,
+        i18n,
+        render: (h) => h(App),
+    }).$mount('#app')
+)
