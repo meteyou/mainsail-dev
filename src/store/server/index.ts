@@ -60,7 +60,7 @@ export const server: Module<ServerState, any> = {
         power,
         updateManager,
         history,
-		authorization,
+        authorization,
         timelapse,
         jobQueue,
         announcements,
