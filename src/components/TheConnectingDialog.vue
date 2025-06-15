@@ -1,23 +1,29 @@
-<style scoped>
-
-</style>
-
 <template>
     <v-dialog v-model="showDialog" persistent :width="400">
-        <v-card dark>
-            <v-toolbar flat dense color="primary">
-                <v-toolbar-title>
-                    <span class="subheading">
-                        <v-icon class="mdi mdi-connection" left></v-icon>
-                        <template v-if="connectingFailed">{{ $t("ConnectionDialog.Failed", {'host': formatHostname}) }}</template>
-                        <template v-else-if="isConnecting">{{ $t("ConnectionDialog.Connecting", {'host': formatHostname}) }}</template>
-                        <template v-else-if="needLogin">{{ $t("ConnectionDialog.Login") }}</template>
-                        <template v-else>{{ formatHostname }}</template>
-                    </span>
-                </v-toolbar-title>
-            </v-toolbar>
-            <v-card-text class="pt-5" v-if="isConnecting">
-                <v-progress-linear color="white" indeterminate></v-progress-linear>
+        <panel :title="titleText" :icon="mdiConnection" card-class="the-connection-dialog" :margin-bottom="false">
+            <v-card-text v-if="connectingFailed" class="pt-5">
+                <connection-status :moonraker="false" />
+                <p class="text-center mt-3 mb-0">
+                    {{ $t('ConnectionDialog.CannotConnectTo', { host: formatHostname }) }}
+                </p>
+                <p v-if="connectionFailedMessage" class="text-center mt-1 red--text">
+                    {{ $t('ConnectionDialog.ErrorMessage', { message: connectionFailedMessage }) }}
+                </p>
+                <template v-if="counter > 2">
+                    <v-divider class="my-3" />
+                    <p>{{ $t('ConnectionDialog.CheckMoonrakerLog') }}</p>
+                    <ul>
+                        <li>~/printer_data/logs/moonraker.log</li>
+                    </ul>
+                    <v-divider class="mt-4 mb-5" />
+                </template>
+                <div class="text-center mt-3">
+                    <v-btn v-if="helpButtonUrl" class="text--disabled mr-3" :href="helpButtonUrl" target="_blank">
+                        <v-icon left>{{ mdiHelp }}</v-icon>
+                        {{ $t('ConnectionDialog.Help') }}
+                    </v-btn>
+                    <v-btn class="primary--text" @click="reconnect">{{ $t('ConnectionDialog.TryAgain') }}</v-btn>
+                </div>
             </v-card-text>
             <v-card-text class="pt-5" v-else-if="needLogin">
                 <v-form v-model="form.valid" @submit.prevent="login">
@@ -68,38 +74,26 @@
                     </v-row>
                 </v-form>
             </v-card-text>
-            <v-card-text class="pt-5" v-if="!isConnecting && connectingFailed">
-                <connection-status :moonraker="false"></connection-status>
-                <p class="text-center mt-3">{{ $t("ConnectionDialog.CannotConnectTo", {'host': formatHostname}) }}</p>
-                <template v-if="counter > 2">
-                    <v-divider class="my-3"></v-divider>
-                    <p>{{ $t("ConnectionDialog.CheckMoonrakerLog") }}</p>
-                    <ul>
-                        <li>~/klipper_logs/moonraker.log</li>
-                        <li>/tmp/moonraker.log</li>
-                    </ul>
-                    <v-divider class="mt-4 mb-5"></v-divider>
-                </template>
-                <div class="text-center">
-                    <v-btn @click="reconnect" color="primary">{{ $t("ConnectionDialog.TryAgain") }}</v-btn>
-                </div>
+            <v-card-text v-else class="pt-5">
+                <v-progress-linear :color="progressBarColor" indeterminate />
             </v-card-text>
-        </v-card>
+        </panel>
     </v-dialog>
 </template>
 
 <script lang="ts">
-
 import Component from 'vue-class-component'
 import { Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
-import ConnectionStatus from "@/components/ui/ConnectionStatus.vue";
+import ThemeMixin from '@/components/mixins/theme'
+import ConnectionStatus from '@/components/ui/ConnectionStatus.vue'
+import { mdiConnection, mdiHelp } from '@mdi/js'
 import axios from "axios";
 
 @Component({
     components: {
         ConnectionStatus,
-    }
+    },
 })
 export default class TheUpdateDialog extends Mixins(BaseMixin) {
     private counter = 0
@@ -110,10 +104,11 @@ export default class TheUpdateDialog extends Mixins(BaseMixin) {
         username: "",
         password: ""
     }
+export default class TheConnectingDialog extends Mixins(BaseMixin, ThemeMixin) {
+    mdiConnection = mdiConnection
+    mdiHelp = mdiHelp
 
-    get protocol() {
-        return this.$store.state.socket.protocol
-    }
+    counter = 0
 
     get hostname() {
         return this.$store.state.socket.hostname
@@ -123,12 +118,14 @@ export default class TheUpdateDialog extends Mixins(BaseMixin) {
         return this.$store.state.socket.port
     }
 
-    get formatHostname() {
-        return parseInt(this.port) !== 80 && this.port !== "" ? this.hostname+":"+this.port : this.hostname
+    get path() {
+        return this.$store.state.socket.path
     }
 
-    get isConnected() {
-        return this.$store.state.socket.isConnected
+    get formatHostname() {
+        return parseInt(this.port) !== 80 && this.port !== ''
+            ? this.hostname + ':' + this.port + this.path
+            : this.hostname + this.path
     }
 
     get isConnecting() {
@@ -144,7 +141,26 @@ export default class TheUpdateDialog extends Mixins(BaseMixin) {
     }
 
     get showDialog() {
-        return !this.isConnected
+        return true
+    }
+
+    get titleText() {
+        if (this.connectingFailed) return this.$t('ConnectionDialog.Failed', { host: this.formatHostname })
+        if (this.isConnecting) return this.$t('ConnectionDialog.Connecting', { host: this.formatHostname })
+        if (this.needLogin) return this.$t('ConnectionDialog.Login')
+        if (!this.guiIsReady) return this.$t('ConnectionDialog.Initializing')
+
+        return this.formatHostname
+    }
+
+    get connectionFailedMessage() {
+        return this.$store.state.socket.connectionFailedMessage ?? null
+    }
+
+    get helpButtonUrl() {
+        if (!this.$store.state.socket.connectionFailedMessage) return null
+
+        return `https://docs.mainsail.xyz/faq/mainsail_errors/connection-${this.connectionFailedMessage?.toLowerCase()}`
     }
 
     async mounted() {

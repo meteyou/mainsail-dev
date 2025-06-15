@@ -1,105 +1,179 @@
-import {caseInsensitiveSort} from "@/plugins/helpers";
-import {GetterTree} from "vuex";
-import {GuiState} from "@/store/gui/types";
+import { GetterTree } from 'vuex'
+import { GuiState } from '@/store/gui/types'
+import { GuiMacrosStateMacrogroup } from '@/store/gui/macros/types'
+import { allDashboardPanels, defaultTheme, themes } from '@/store/variables'
+import { Theme } from '@/store/types'
 
+// eslint-disable-next-line
 export const getters: GetterTree<GuiState, any> = {
+    theme: (state): string => {
+        const theme = state.uiSettings.theme
 
-	getPreheatPresets:(state) => {
-		const output = []
+        // return defaultTheme, if theme doesnt exists
+        if (themes.findIndex((tmp: Theme) => tmp.name === theme) === -1) return defaultTheme
 
-		for (const [key, preset] of Object.entries(state.presets)) {
-			output.push(Object.assign({}, preset, { index: parseInt(key) }))
-		}
+        return theme
+    },
 
-		return caseInsensitiveSort(output, 'name')
-	},
+    getTheme: (state, getters): Theme => {
+        return themes.find((theme: Theme) => theme.name === getters.theme) ?? themes[0]
+    },
 
-	getConsoleFilters:(state) => {
-		const output = []
+    getDatasetValue: (state) => (payload: { name: string; type: string }) => {
+        if (
+            payload.name in state.view.tempchart.datasetSettings &&
+            payload.type in state.view.tempchart.datasetSettings[payload.name]
+        )
+            return state.view.tempchart.datasetSettings[payload.name][payload.type]
 
-		for (const [key, filter] of Object.entries(state.console.customFilters)) {
-			output.push(Object.assign({}, filter, { index: key }))
-		}
+        return ['temperature', 'target'].includes(payload.type)
+    },
 
-		return caseInsensitiveSort(output, 'name')
-	},
+    getDatasetAdditionalSensorValue: (state) => (payload: { name: string; sensor: string }) => {
+        if (
+            payload.name in state.view.tempchart.datasetSettings &&
+            'additionalSensors' in state.view.tempchart.datasetSettings[payload.name] &&
+            payload.sensor in state.view.tempchart.datasetSettings[payload.name].additionalSensors
+        )
+            return state.view.tempchart.datasetSettings[payload.name].additionalSensors[payload.sensor]
 
-	getConsoleFilterRules:(state) => {
-		const output = []
+        return true
+    },
 
-		if (state.console.hideWaitTemperatures)
-			output.push('^(?:ok\\s+)?(B|C|T\\d*):')
+    getPanelExpand: (state) => (name: string, viewport: string) => {
+        if ('dashboard' in state && viewport in state.dashboard.nonExpandPanels) {
+            return !state.dashboard.nonExpandPanels[viewport].includes(name)
+        }
 
-		if (Array.isArray(state.console.customFilters) && state.console.customFilters.length) {
-			state.console.customFilters.filter((filter: any) => filter.bool === true).forEach((filter: any) => {
-				filter.regex.split("\n").forEach((rule: string) => {
-					if (rule !== "") output.push(rule)
-				})
-			})
-		}
+        return true
+    },
 
-		return output
-	},
+    getAllPossiblePanels: (state, getters, rootState, rootGetters) => {
+        let allPanels = [...allDashboardPanels]
 
-	getWebcams:(state) => {
-		const output = []
+        // remove macros panel and add macrogroups panels if macroMode === expert
+        if (state.macros?.mode === 'expert') {
+            const macrogroups = getters['macros/getAllMacrogroups']
 
-		for (const [key, webcam] of Object.entries(state.webcam.configs)) {
-			output.push(Object.assign({}, webcam, { index: key }))
-		}
+            macrogroups.forEach((group: GuiMacrosStateMacrogroup) => {
+                allPanels.push('macrogroup_' + group.id)
+            })
 
-		return caseInsensitiveSort(output, 'name')
-	},
+            allPanels = allPanels.filter((name) => name !== 'macros')
+        }
 
-	getDatasetValue: (state) => (payload: any) => {
-		if (
-			payload.name in state.tempchart.datasetSettings &&
-			payload.type in state.tempchart.datasetSettings[payload.name]
-		) return state.tempchart.datasetSettings[payload.name][payload.type]
+        // remove toolhead & machine-settings panel, if kinematics === none
+        const printerKinematics = rootGetters['printer/getKinematics']
+        if (printerKinematics === 'none') {
+            allPanels = allPanels.filter((name) => !['toolhead-control', 'machine-settings'].includes(name))
+        }
 
-		if (["temperature", "target"].includes(payload.type)) return true
+        // remove extruder panel, if printerExtruderCount < 1
+        const printerExtruders = rootGetters['printer/getExtruders']
+        if (printerExtruders.length < 1) {
+            allPanels = allPanels.filter((name) => name !== 'extruder-control')
+        }
 
-		return false
-	},
+        // remove temperature panel, if sensors < 1
+        const printerTemperatureSensors = rootState.printer?.heaters?.available_sensors ?? []
+        if (printerTemperatureSensors.length < 1) {
+            allPanels = allPanels.filter((name) => name !== 'temperature')
+        }
 
-	getDatasetAdditionalSensorValue: (state) => (payload: any) => {
-		if (
-			payload.name in state.tempchart.datasetSettings &&
-			'additionalSensors' in state.tempchart.datasetSettings[payload.name] &&
-			payload.sensor in state.tempchart.datasetSettings[payload.name].additionalSensors
-		) return state.tempchart.datasetSettings[payload.name].additionalSensors[payload.sensor]
+        // remove webcam panel, if no webcam exists
+        const webcams = getters['webcams/getWebcams']
+        if (webcams.length === 0) {
+            allPanels = allPanels.filter((name) => name !== 'webcam')
+        }
 
-		return true
-	},
+        // remove spoolman panel, if no spoolman component exists in moonraker
+        if (!rootState.server.components.includes('spoolman')) {
+            allPanels = allPanels.filter((name) => name !== 'spoolman')
+        }
 
-	getPresetsFromHeater: state => (payload: any) => {
-		interface preset {
-			value: number
-		}
+        return allPanels
+    },
 
-		const output: preset[] = []
+    getPanels:
+        (state, getters, rootState) =>
+        (viewport: string, column: number, onlyVisible: boolean = false) => {
+            const layoutName = column ? `${viewport}Layout${column}` : `${viewport}Layout`
+            // @ts-ignore
+            let panels = state.dashboard[layoutName]?.filter((element: any) => element !== null) ?? []
+            const allPossiblePanels = getters['getAllPossiblePanels']
 
-		output.push({
-			value: 0
-		})
+            if (column < 2) {
+                const allViewportPanels = getters['getAllPanelsFromViewport'](viewport)
+                const missingPanels: any[] = []
 
-		Object.values(state.presets).forEach((preset: any) => {
-			if (
-				payload.name in preset.values &&
-				preset.values[payload.name].bool &&
-				output.findIndex((entry: any) => entry.value === preset.values[payload.name].value) === -1
-			) {
-				output.push({
-					value: preset.values[payload.name].value,
-				})
-			}
-		})
+                allPossiblePanels.forEach((panelname: string) => {
+                    if (!allViewportPanels.find((panel: any) => panel.name === panelname))
+                        missingPanels.push({
+                            name: panelname,
+                            visible: true,
+                        })
+                })
+                panels = panels.concat(missingPanels)
+            }
 
-		return output.sort((a: preset,b: preset) => {
-			if (a.value > b.value) return -1
-			if (a.value < b.value) return 1
+            if (onlyVisible) {
+                panels = panels.filter((element: any) => element.visible)
+            }
 
-			return 0
-		})
-	}
+            if (rootState.gui.macros.mode === 'simple')
+                panels = panels.filter((element: any) => !element.name.startsWith('macrogroup_'))
+            else {
+                panels = panels.filter((element: any) => element.name !== 'macros')
+                const macrogroups = getters['macros/getAllMacrogroups']
+                if (macrogroups.length) {
+                    panels = panels.filter((element: any) => {
+                        if (!element.name.startsWith('macrogroup_')) return true
+
+                        const macrogroupId = element.name.slice(11)
+                        return (
+                            macrogroups.findIndex(
+                                (macrogroup: GuiMacrosStateMacrogroup) => macrogroup.id === macrogroupId
+                            ) !== -1
+                        )
+                    })
+                }
+            }
+
+            return panels.filter((element: any) => allPossiblePanels.includes(element.name))
+        },
+
+    getAllPanelsFromViewport: (state) => (viewport: string) => {
+        let panels: any = []
+
+        if (`${viewport}Layout` in state.dashboard) {
+            // @ts-ignore
+            panels = panels.concat(state.dashboard[`${viewport}Layout`])
+        }
+
+        let nr = 1
+        while (`${viewport}Layout${nr}` in state.dashboard) {
+            // @ts-ignore
+            panels = panels.concat(state.dashboard[`${viewport}Layout${nr}`])
+            nr++
+        }
+
+        return panels
+    },
+
+    getDefaultControlActionButton: (state, getters, rootState, rootGetters) => {
+        if (rootGetters['printer/existsQGL']) return 'qgl'
+        else if (rootGetters['printer/existsZtilt']) return 'ztilt'
+
+        return 'm84'
+    },
+
+    getHours12Format: (state) => {
+        const setting = state.general.timeFormat
+        if (setting === '12hours') return true
+        if (setting === null) {
+            return Intl.DateTimeFormat(navigator.language, { hour: 'numeric' }).resolvedOptions().hour12
+        }
+
+        return false
+    },
 }

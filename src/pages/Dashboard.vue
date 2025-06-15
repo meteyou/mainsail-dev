@@ -4,7 +4,10 @@
             <v-col>
                 <status-panel></status-panel>
                 <template v-for="component in mobileLayout">
-                    <component v-bind:is="component.name+'-panel'" :key="'dashboard-mobileLayout-'+component.name"></component>
+                    <component
+                        :is="extractPanelName(component.name)"
+                        :key="'dashboard-mobileLayout-' + component.name"
+                        :panel-id="extractPanelId(component.name)"></component>
                 </template>
             </v-col>
         </v-row>
@@ -12,12 +15,18 @@
             <v-col class="col-6">
                 <status-panel></status-panel>
                 <template v-for="component in tabletLayout1">
-                    <component v-bind:is="component.name+'-panel'" :key="'dashboard-tabletLayout1-'+component.name"></component>
+                    <component
+                        :is="extractPanelName(component.name)"
+                        :key="'dashboard-tabletLayout1-' + component.name"
+                        :panel-id="extractPanelId(component.name)"></component>
                 </template>
             </v-col>
             <v-col class="col-6">
                 <template v-for="component in tabletLayout2">
-                    <component v-bind:is="component.name+'-panel'" :key="'dashboard-tabletLayout2-'+component.name"></component>
+                    <component
+                        :is="extractPanelName(component.name)"
+                        :key="'dashboard-tabletLayout2-' + component.name"
+                        :panel-id="extractPanelId(component.name)"></component>
                 </template>
             </v-col>
         </v-row>
@@ -25,12 +34,18 @@
             <v-col class="col-5">
                 <status-panel></status-panel>
                 <template v-for="component in desktopLayout1">
-                    <component v-bind:is="component.name+'-panel'" :key="'dashboard-desktopLayout1-'+component.name"></component>
+                    <component
+                        :is="extractPanelName(component.name)"
+                        :key="'dashboard-desktopLayout1-' + component.name"
+                        :panel-id="extractPanelId(component.name)"></component>
                 </template>
             </v-col>
             <v-col class="col-7">
                 <template v-for="component in desktopLayout2">
-                    <component v-bind:is="component.name+'-panel'" :key="'dashboard-desktopLayout2-'+component.name"></component>
+                    <component
+                        :is="extractPanelName(component.name)"
+                        :key="'dashboard-desktopLayout2-' + component.name"
+                        :panel-id="extractPanelId(component.name)"></component>
                 </template>
             </v-col>
         </v-row>
@@ -38,17 +53,26 @@
             <v-col class="col-3">
                 <status-panel></status-panel>
                 <template v-for="component in widescreenLayout1">
-                    <component v-bind:is="component.name+'-panel'" :key="'dashboard-desktopLayout1-'+component.name"></component>
+                    <component
+                        :is="extractPanelName(component.name)"
+                        :key="'dashboard-desktopLayout1-' + component.name"
+                        :panel-id="extractPanelId(component.name)"></component>
                 </template>
             </v-col>
             <v-col class="col-5">
                 <template v-for="component in widescreenLayout2">
-                    <component v-bind:is="component.name+'-panel'" :key="'dashboard-desktopLayout2-'+component.name"></component>
+                    <component
+                        :is="extractPanelName(component.name)"
+                        :key="'dashboard-desktopLayout2-' + component.name"
+                        :panel-id="extractPanelId(component.name)"></component>
                 </template>
             </v-col>
             <v-col class="col-4">
                 <template v-for="component in widescreenLayout3">
-                    <component v-bind:is="component.name+'-panel'" :key="'dashboard-desktopLayout3-'+component.name"></component>
+                    <component
+                        :is="extractPanelName(component.name)"
+                        :key="'dashboard-desktopLayout3-' + component.name"
+                        :panel-id="extractPanelId(component.name)"></component>
                 </template>
             </v-col>
         </v-row>
@@ -56,70 +80,79 @@
 </template>
 
 <script lang="ts">
-
-import Component from "vue-class-component";
-import {Mixins} from "vue-property-decorator";
-import BaseMixin from "@/components/mixins/base";
-import MinSettingsPanel from "@/components/panels/MinSettingsPanel.vue";
-import KlippyStatePanel from "@/components/panels/KlippyStatePanel.vue";
-import MoonrakerStatePanel from "@/components/panels/MoonrakerStatePanel.vue";
-import StatusPanel from "@/components/panels/StatusPanel.vue";
-import ToolsPanel from "@/components/panels/ToolsPanel.vue";
-import WebcamPanel from "@/components/panels/WebcamPanel.vue";
-import ZoffsetPanel from "@/components/panels/ZoffsetPanel.vue";
-import ControlPanel from "@/components/panels/ControlPanel.vue";
-import MacrosPanel from "@/components/panels/MacrosPanel.vue";
-import MiscellaneousPanel from "@/components/panels/MiscellaneousPanel.vue";
-import MiniconsolePanel from "@/components/panels/MiniconsolePanel.vue";
-import PrintsettingsPanel from "@/components/panels/PrintsettingsPanel.vue";
+import Component from 'vue-class-component'
+import { Mixins } from 'vue-property-decorator'
+import ExtruderControlPanel from '@/components/panels/ExtruderControlPanel.vue'
+import DashboardMixin from '@/components/mixins/dashboard'
+import KlippyStatePanel from '@/components/panels/KlippyStatePanel.vue'
+import MachineSettingsPanel from '@/components/panels/MachineSettingsPanel.vue'
+import MacrogroupPanel from '@/components/panels/MacrogroupPanel.vue'
+import MacrosPanel from '@/components/panels/MacrosPanel.vue'
+import MiniconsolePanel from '@/components/panels/MiniconsolePanel.vue'
+import MinSettingsPanel from '@/components/panels/MinSettingsPanel.vue'
+import MiscellaneousPanel from '@/components/panels/MiscellaneousPanel.vue'
+import SpoolmanPanel from '@/components/panels/SpoolmanPanel.vue'
+import StatusPanel from '@/components/panels/StatusPanel.vue'
+import ToolheadControlPanel from '@/components/panels/ToolheadControlPanel.vue'
+import TemperaturePanel from '@/components/panels/TemperaturePanel.vue'
+import WebcamPanel from '@/components/panels/WebcamPanel.vue'
 
 @Component({
     components: {
-        PrintsettingsPanel,
-        MiniconsolePanel,
-        MiscellaneousPanel,
-        ControlPanel,
-        MacrosPanel,
-        ZoffsetPanel,
-        WebcamPanel,
-        ToolsPanel,
-        StatusPanel,
-        MoonrakerStatePanel,
+        ExtruderControlPanel,
         KlippyStatePanel,
-        MinSettingsPanel
-    }
+        MachineSettingsPanel,
+        MacrogroupPanel,
+        MacrosPanel,
+        MiniconsolePanel,
+        MinSettingsPanel,
+        MiscellaneousPanel,
+        SpoolmanPanel,
+        StatusPanel,
+        ToolheadControlPanel,
+        TemperaturePanel,
+        WebcamPanel,
+    },
 })
-export default class PageDashboard extends Mixins(BaseMixin) {
+export default class PageDashboard extends Mixins(DashboardMixin) {
     get mobileLayout() {
-        return this.$store.state.gui.dashboard.mobileLayout.filter((element: any) => element.visable) ?? []
+        return this.$store.getters['gui/getPanels']('mobile', 0, true)
     }
 
     get tabletLayout1() {
-        return this.$store.state.gui.dashboard.tabletLayout1.filter((element: any) => element.visable) ?? []
+        return this.$store.getters['gui/getPanels']('tablet', 1, true)
     }
 
     get tabletLayout2() {
-        return this.$store.state.gui.dashboard.tabletLayout2.filter((element: any) => element.visable) ?? []
+        return this.$store.getters['gui/getPanels']('tablet', 2, true)
     }
 
     get desktopLayout1() {
-        return this.$store.state.gui.dashboard.desktopLayout1.filter((element: any) => element.visable) ?? []
+        return this.$store.getters['gui/getPanels']('desktop', 1, true)
     }
 
     get desktopLayout2() {
-        return this.$store.state.gui.dashboard.desktopLayout2.filter((element: any) => element.visable) ?? []
+        return this.$store.getters['gui/getPanels']('desktop', 2, true)
     }
 
     get widescreenLayout1() {
-        return this.$store.state.gui.dashboard.widescreenLayout1.filter((element: any) => element.visable) ?? []
+        return this.$store.getters['gui/getPanels']('widescreen', 1, true)
     }
 
     get widescreenLayout2() {
-        return this.$store.state.gui.dashboard.widescreenLayout2.filter((element: any) => element.visable) ?? []
+        return this.$store.getters['gui/getPanels']('widescreen', 2, true)
     }
 
     get widescreenLayout3() {
-        return this.$store.state.gui.dashboard.widescreenLayout3.filter((element: any) => element.visable) ?? []
+        return this.$store.getters['gui/getPanels']('widescreen', 3, true)
+    }
+
+    extractPanelName(name: string) {
+        return name.split('_')[0] + '-panel'
+    }
+
+    extractPanelId(name: string) {
+        return name.split('_')[1] ?? null
     }
 }
 </script>

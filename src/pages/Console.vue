@@ -1,68 +1,77 @@
-<style scoped>
-
-.consoleScrollContainer {
-    max-height: calc(100vh - 180px);
-}
-
-</style>
-
 <template>
     <div class="d-flex flex-column">
-        <v-row :class="this.consoleDirection === 'table' ? 'order-0' : 'order-1 mt-3'">
-            <v-col class="col">
-                <v-textarea
-                    v-model="gcode"
-                    :items="items"
-                    :label="$t('Console.SendCode')"
-                    solo
-                    class="gcode-command-field"
-                    ref="gcodeCommandField"
-                    autocomplete="off"
-                    no-resize
-                    auto-grow
-                    :rows="rows"
-                    @keydown.enter.prevent.stop="doSend"
-                    @keyup.up="onKeyUp"
-                    @keyup.down="onKeyDown"
-                    @keydown.tab="getAutocomplete"
-                    hide-details
-                    outlined
-                    dense
-                    append-icon="mdi-send"
-                    @click:append="doSend"
-                ></v-textarea>
+        <v-row :class="consoleDirection === 'table' ? 'order-0' : 'order-1 mt-3'">
+            <v-col>
+                <console-textarea ref="gcodeCommandField" />
             </v-col>
 
             <v-col class="col-auto d-flex align-center">
-                <command-help-modal
-                    @onCommand="gcode = $event"
-                ></command-help-modal>
-                <v-menu offset-y :top="consoleDirection === 'shell'" :close-on-content-click="false" :title="$t('Console.SetupConsole')">
-                    <template v-slot:activator="{ on, attrs }">
-                        <v-btn class="ml-3 px-2 minwidth-0" color="lightgray" v-bind="attrs" v-on="on"><v-icon>mdi-filter</v-icon></v-btn>
+                <v-btn class="mr-3 px-2 minwidth-0" color="lightgray" @click="clearConsole">
+                    <v-icon>{{ mdiTrashCan }}</v-icon>
+                </v-btn>
+                <command-help-modal @onCommand="commandClick($event)" />
+                <v-menu
+                    offset-y
+                    :top="consoleDirection === 'shell'"
+                    :close-on-content-click="false"
+                    :title="$t('Console.SetupConsole')">
+                    <template #activator="{ on, attrs }">
+                        <v-btn class="ml-3 px-2 minwidth-0" color="lightgray" v-bind="attrs" v-on="on">
+                            <v-icon>{{ mdiCog }}</v-icon>
+                        </v-btn>
                     </template>
                     <v-list>
-                        <v-list-item class="minHeight36">
-                            <v-checkbox class="mt-0" v-model="hideWaitTemperatures" hide-details :label="$t('Console.HideTemperatures')"></v-checkbox>
+                        <v-list-item v-if="consoleDirection === 'shell'" class="minHeight36">
+                            <v-checkbox
+                                v-model="autoscroll"
+                                class="mt-0"
+                                hide-details
+                                :label="$t('Panels.MiniconsolePanel.Autoscroll')" />
                         </v-list-item>
-                        <v-list-item class="minHeight36" v-for="(filter, index) in customFilters" v-bind:key="index">
-                            <v-checkbox class="mt-0" v-model="filter.bool" @change="toggleFilter(filter)" hide-details :label="filter.name"></v-checkbox>
+                        <v-list-item class="minHeight36">
+                            <v-checkbox
+                                v-model="hideWaitTemperatures"
+                                class="mt-0"
+                                hide-details
+                                :label="$t('Console.HideTemperatures')" />
+                        </v-list-item>
+                        <v-list-item v-if="moonrakerComponents.includes('timelapse')" class="minHeight36">
+                            <v-checkbox
+                                v-model="hideTlCommands"
+                                class="mt-0"
+                                hide-details
+                                :label="$t('Console.HideTimelapse')" />
+                        </v-list-item>
+                        <v-list-item v-for="(filter, index) in customFilters" :key="index" class="minHeight36">
+                            <v-checkbox
+                                v-model="filter.bool"
+                                class="mt-0"
+                                hide-details
+                                :label="filter.name"
+                                @change="toggleFilter(index, filter)" />
+                        </v-list-item>
+                        <v-list-item class="minHeight36">
+                            <v-checkbox
+                                v-model="rawOutput"
+                                class="mt-0"
+                                hide-details
+                                :label="$t('Panels.MiniconsolePanel.RawOutput')" />
                         </v-list-item>
                     </v-list>
                 </v-menu>
             </v-col>
         </v-row>
-        <v-row :class="this.consoleDirection === 'table' ? 'order-1' : 'order-0 mt-0'">
-            <v-col xs12>
+        <v-row :class="consoleDirection === 'table' ? 'order-1' : 'order-0 mt-0'">
+            <v-col :class="consoleDirection === 'table' ? 'col' : 'col pt-0'">
                 <v-card>
                     <v-card-text class="pa-0">
-                        <perfect-scrollbar ref="consoleScroll" class="consoleScrollContainer d-flex flex-column justify-end">
-                            <console-table ref="console"
-                                           :is-mini="false"
-                                           :events="events"
-                                           @command-click="commandClick"
-                            />
-                        </perfect-scrollbar>
+                        <overlay-scrollbars ref="consoleScroll" class="consoleScrollContainer d-flex flex-column">
+                            <console-table
+                                ref="console"
+                                :is-mini="false"
+                                :events="events"
+                                @command-click="commandClick" />
+                        </overlay-scrollbars>
                     </v-card-text>
                 </v-card>
             </v-col>
@@ -71,151 +80,47 @@
 </template>
 
 <script lang="ts">
-import {Component, Mixins, Watch} from "vue-property-decorator";
-import BaseMixin from "@/components/mixins/base";
-import ConsoleTable from "@/components/console/ConsoleTable.vue";
-import {CommandHelp, ConsoleCommandHelp, VTextareaType} from "@/store/printer/types";
-import {reverseString, strLongestEqual} from "@/plugins/helpers";
-import CommandHelpModal from "@/components/CommandHelpModal.vue";
-import Vue from "vue";
+import { Component, Mixins, Ref, Watch } from 'vue-property-decorator'
+import BaseMixin from '@/components/mixins/base'
+import ConsoleTable from '@/components/console/ConsoleTable.vue'
+import CommandHelpModal from '@/components/console/CommandHelpModal.vue'
+import { mdiCog, mdiTrashCan } from '@mdi/js'
+import ConsoleMixin from '@/components/mixins/console'
+import ConsoleTextarea from '@/components/inputs/ConsoleTextarea.vue'
 
 @Component({
     components: {
         CommandHelpModal,
         ConsoleTable,
-    }
+    },
 })
-export default class PageConsole extends Mixins(BaseMixin) {
-    private gcode = ''
-    private lastCommands: string[] = []
-    private lastCommandNumber: number | null = null
-    private items = []
+export default class PageConsole extends Mixins(BaseMixin, ConsoleMixin) {
+    mdiCog = mdiCog
+    mdiTrashCan = mdiTrashCan
 
-    $refs!: {
-        gcodeCommandField: VTextareaType,
-        console: ConsoleTable,
-        consoleScroll: any
-    }
-
-    get helplist(): CommandHelp[] {
-        return this.$store.state.printer.helplist ?? []
-    }
-
-    get consoleDirection() {
-        return this.$store.state.gui.console.direction ?? 'table'
-    }
+    @Ref() readonly consoleScroll!: any
+    @Ref() readonly gcodeCommandField!: typeof ConsoleTextarea
 
     get events() {
-        return this.$store.getters["server/getConsoleEvents"](this.consoleDirection === 'table')
+        return this.$store.getters['server/getConsoleEvents'](this.consoleDirection === 'table')
     }
 
     @Watch('events')
     eventsChanged() {
-        if (this.consoleDirection === 'shell') this.scrollToBottom()
+        if (this.consoleDirection === 'shell' && this.autoscroll) {
+            setTimeout(() => {
+                this.scrollToBottom()
+            }, 50)
+        }
     }
 
-    get hideWaitTemperatures(): boolean {
-        return this.$store.state.gui.console.hideWaitTemperatures
-    }
-
-    set hideWaitTemperatures(newVal) {
-        this.$socket.emit('server.database.post_item', { namespace: 'mainsail', key: "console.hideWaitTemperatures", value: newVal }, { action: 'gui/updateDataFromDB' })
-    }
-
-    get rows(): number {
-        return this.gcode?.split('\n').length ?? 1;
-    }
-
-    get customFilters(): any[] {
-        return this.$store.state.gui.console.customFilters
+    @Watch('autoscroll')
+    autoscrollChanged(newVal: boolean) {
+        if (newVal) this.scrollToBottom()
     }
 
     commandClick(msg: string): void {
-        this.gcode = msg
-    }
-
-    doSend(cmd: KeyboardEvent): void {
-        if (!cmd.shiftKey) {
-            if (this.gcode !== "") {
-                this.$store.dispatch('printer/sendGcode', this.gcode);
-                this.lastCommands.push(this.gcode);
-                this.gcode = "";
-                this.lastCommandNumber = null;
-                setTimeout(() => {
-                    this.$refs.console.$el.scroll({
-                        top: 0,
-                        left: 0,
-                        behavior: 'smooth'
-                    });
-                }, 20);
-            }
-        } else this.gcode += '\n';
-    }
-
-    onKeyUp(): void {
-        if (this.lastCommandNumber === null && this.lastCommands.length) {
-            this.lastCommandNumber = this.lastCommands.length - 1;
-            this.gcode = this.lastCommands[this.lastCommandNumber];
-        } else if (this.lastCommandNumber && this.lastCommandNumber > 0) {
-            this.lastCommandNumber--;
-            this.gcode = this.lastCommands[this.lastCommandNumber];
-        }
-    }
-
-    onKeyDown(): void {
-        if (this.lastCommandNumber !== null && this.lastCommandNumber < (this.lastCommands.length - 1)) {
-            this.lastCommandNumber++;
-            this.gcode = this.lastCommands[this.lastCommandNumber];
-        } else if (this.lastCommandNumber !== null && this.lastCommandNumber === (this.lastCommands.length - 1)) {
-            this.lastCommandNumber = null;
-            this.gcode = "";
-        }
-    }
-
-    getAutocomplete(e: Event): void {
-        e.preventDefault();
-        if (this.gcode.length) {
-            let check = this.gcode.toLowerCase();
-            const textarea = this.$refs.gcodeCommandField.$refs.input;
-            const sentence = textarea.value;
-            const len = sentence.length;
-            const pos = textarea.selectionStart;
-            const currentLinePos = len - reverseString(sentence).indexOf('\n', len - pos);
-            const currentEndPos = sentence.indexOf('\n', currentLinePos) > -1 ? sentence.indexOf('\n', currentLinePos) - 1 : Number.MAX_SAFE_INTEGER;
-            if (this.rows > 1) {
-                check = sentence.substr(currentLinePos, currentEndPos - currentLinePos);
-            }
-            let commands = this.helplist.filter((element) => element.commandLow.startsWith(check.toLowerCase()));
-            if (commands?.length === 1) {
-                if (this.rows > 1) {
-                    this.gcode = this.gcode.replace(check, commands[0].command);
-                } else {
-                    this.gcode = commands[0].command;
-                }
-            } else if(commands?.length > 1) {
-                let commands = this.helplist.filter((element) => element.commandLow.startsWith(check.toLowerCase()));
-                if (this.rows > 1) {
-                    this.gcode = this.gcode.replace(check, commands.reduce((acc, val) => {
-                        return strLongestEqual(acc, val.command);
-                    }, commands[0].command));
-                } else {
-                    this.gcode = commands.reduce((acc, val) => {
-                        return strLongestEqual(acc, val.command);
-                    }, commands[0].command);
-                }
-                if (commands && commands.length) {
-                    let output = "";
-                    commands.forEach(command => output += "<a class='command blue--text'>"+command.command+"</a>: "+command.description+"<br />");
-
-                    this.$store.dispatch('server/addEvent', { message: output, type: 'autocomplete' });
-                }
-            }
-        }
-        this.$refs.gcodeCommandField.focus();
-    }
-
-    toggleFilter(filter: string): void {
-        this.$store.dispatch('gui/updateConsoleFilter',  filter)
+        this.gcodeCommandField.setGcode(msg)
     }
 
     mounted() {
@@ -224,11 +129,22 @@ export default class PageConsole extends Mixins(BaseMixin) {
 
     scrollToBottom() {
         this.$nextTick(() => {
-            if (this.$refs.consoleScroll) {
-                const perfectScroll = ((this.$refs.consoleScroll as Vue).$el as HTMLDivElement)
-                perfectScroll.scrollTop = perfectScroll.scrollHeight
-            }
+            if (!this.consoleScroll) return
+
+            const overlayscroll = this.consoleScroll.osInstance()
+            overlayscroll?.scroll({ y: '100%' })
         })
     }
 }
 </script>
+
+<style scoped>
+.consoleScrollContainer {
+    min-height: 200px;
+    height: calc(var(--app-height) - 180px);
+}
+
+.gcode-command-field {
+    font-family: 'Roboto Mono', monospace;
+}
+</style>

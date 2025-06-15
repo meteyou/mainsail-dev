@@ -1,118 +1,92 @@
 <template>
-    <v-card>
-        <v-toolbar flat dense >
-            <v-toolbar-title>
-                <span class="subheading"><v-icon left>mdi-arrow-expand-vertical</v-icon>{{ $t('Machine.EndstopPanel.Endstops')}}</span>
-            </v-toolbar-title>
-        </v-toolbar>
-        <v-card-text class="pb-0">
-            <v-container px-0 py-0>
-                <template v-if="Object.keys(endstops).length">
-                    <v-row v-for="key of Object.keys(endstops)" v-bind:key="key">
-                        <v-col class="py-1">
-                            <label class="mt-1 d-inline-block">{{ $t('Machine.EndstopPanel.Endstop')}} <b>{{ key.toUpperCase() }}</b></label>
-                            <v-chip class="float-right" small :color="endstops[key] === 'open' ? 'green' : 'red' " text-color="white">
-                                <template v-if="endstops[key] === 'open'">
-                                    {{ $t('Machine.EndstopPanel.open')}}
-                                </template>
-                                <template v-else>
-                                    {{ $t('Machine.EndstopPanel.TRIGGERED')}}
-                                </template>
-                            </v-chip>
-                        </v-col>
-                    </v-row>
-                    <v-row v-if="existProbe">
-                        <v-col class="py-1">
-                            <label class="mt-1 d-inline-block">Probe</label>
-                            <v-chip class="float-right" small :color="probe ? 'red' : 'green' " text-color="white">
-                            <template v-if="probe">
-                                {{ $t('Machine.EndstopPanel.TRIGGERED')}}
-                            </template>
-                            <template v-else>
-                                {{ $t('Machine.EndstopPanel.open')}}
-                            </template>
-                            </v-chip>
-                        </v-col>
-                    </v-row>
-                </template>
-                <template v-else>
-                    <v-row>
-                        <v-col>
-                            <p>{{ $t('Machine.EndstopPanel.EndstopInfo')}}</p>
-                        </v-col>
-                    </v-row>
-                </template>
-            </v-container>
+    <panel
+        :title="$t('Machine.EndstopPanel.Endstops')"
+        :icon="mdiArrowExpandVertical"
+        card-class="machine-endstop-panel"
+        :collapsible="true">
+        <v-card-text class="pb-0 pt-6">
+            <EndstopPanelItem v-for="item in items" :key="item.name" :item="item" />
+            <v-row v-if="items.length === 0">
+                <v-col class="pt-0">
+                    <p class="mb-0">{{ $t('Machine.EndstopPanel.EndstopInfo') }}</p>
+                </v-col>
+            </v-row>
         </v-card-text>
         <v-card-actions class="pt-3">
-            <v-spacer></v-spacer>
-            <v-btn icon @click="syncEndstops" :loading="loadings.includes('queryEndstops')">
-                <v-icon>mdi-sync</v-icon>
+            <v-spacer />
+            <v-btn icon :loading="loadings.includes('queryEndstops')" @click="syncEndstops">
+                <v-icon>{{ mdiSync }}</v-icon>
             </v-btn>
-    </v-card-actions>
-    </v-card>
+        </v-card-actions>
+    </panel>
 </template>
 
 <script lang="ts">
+import { Component, Mixins } from 'vue-property-decorator'
+import BaseMixin from '../../mixins/base'
+import Panel from '@/components/ui/Panel.vue'
+import { mdiArrowExpandVertical, mdiSync } from '@mdi/js'
 
-import {Component, Mixins} from "vue-property-decorator";
-import BaseMixin from "../../mixins/base";
+export interface EndstopItem {
+    type: 'endstop' | 'probe'
+    name: string
+    value: string
+}
 
-@Component
+@Component({
+    components: { Panel },
+})
 export default class EndstopPanel extends Mixins(BaseMixin) {
-    public sortEndstops: any = {}
+    mdiArrowExpandVertical = mdiArrowExpandVertical
+    mdiSync = mdiSync
 
-    get endstops() {
-        return this.$store.state.printer.endstops ?? {}
+    get items() {
+        let output: EndstopItem[] = []
+
+        const endstops = this.$store.state.printer.endstops ?? {}
+        Object.keys(endstops).forEach((key) => {
+            output.push({ type: 'endstop', name: key, value: endstops[key] })
+        })
+
+        // dont show probe values if there are no endstop values
+        if (output.length === 0) return []
+
+        output = output.sort((a, b) => a.name.localeCompare(b.name))
+
+        if ('probe' in this.$store.state.printer && 'last_query' in this.$store.state.printer.probe) {
+            const value = this.$store.state.printer.probe.last_query ? 'TRIGGERED' : 'open'
+
+            output.push({
+                type: 'probe',
+                name: this.$store.state.printer.probe.name ?? 'probe',
+                value,
+            })
+        }
+
+        return output
     }
 
-    get existProbe () {
-        return ('probe' in this.$store.state.printer.configfile.settings)
-    }
+    get existsQueryProbe() {
+        const commands = this.$store.state.printer.gcode?.commands ?? null
+        if (commands) {
+            return 'QUERY_PROBE' in commands
+        }
 
-    get probe () {
-        if (
-            'probe' in this.$store.state.printer &&
-            'last_query' in this.$store.state.printer.probe
-        ) return this.$store.state.printer.probe.last_query
-
-        return false
+        // fallback for older Klipper versions
+        return 'probe' in this.$store.state.printer
     }
 
     syncEndstops() {
-        this.$socket.emit('printer.query_endstops.status', { }, { action: "printer/getEndstopStatus", loading: "queryEndstops" })
-        if (this.existProbe) {
-            window.console.log("exist probe")
-            this.$store.dispatch('server/addEvent', { message: "QUERY_PROBE", type: 'command' })
-            this.$socket.emit('printer.gcode.script', { script: "QUERY_PROBE" })
+        this.$socket.emit(
+            'printer.query_endstops.status',
+            {},
+            { action: 'printer/getEndstopStatus', loading: 'queryEndstops' }
+        )
+
+        if (this.existsQueryProbe) {
+            this.$store.dispatch('server/addEvent', { message: 'QUERY_PROBE', type: 'command' })
+            this.$socket.emit('printer.gcode.script', { script: 'QUERY_PROBE' })
         }
     }
 }
-
-/*    import { mapState } from 'vuex'
-
-    export default {
-        created() {
-            this.getEndstops();
-        },
-        methods: {
-            ,
-            getEndstops() {
-                this.sortEndstops = {};
-
-                let keys = Object.keys(this.endstops);
-                keys.sort();
-
-                for (let i = 0; i < keys.length; i++) {
-                    let k = keys[i];
-                    this.sortEndstops[k] = this.endstops[k];
-                }
-            }
-        },
-        watch: {
-            endstops: function() {
-                this.getEndstops();
-            }
-        }
-    }*/
 </script>

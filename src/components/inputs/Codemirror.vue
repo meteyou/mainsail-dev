@@ -1,28 +1,25 @@
-<style>
-    .vue-codemirror .cm-editor {
-        height: calc(100vh - 64px);
-    }
-</style>
-
 <template>
     <div class="vue-codemirror">
-        <div ref="codemirror"></div>
+        <div ref="editor" v-observe-visibility="visibilityChanged"></div>
     </div>
 </template>
 
 <script lang="ts">
-// Inspired by these repo: https://github.com/surmon-china/vue-codemirror
+// Inspired by this repo: https://github.com/surmon-china/vue-codemirror
 
-import {Component, Mixins, Prop, Watch} from "vue-property-decorator";
-import BaseMixin from "../mixins/base";
-import {basicSetup, EditorState} from "@codemirror/basic-setup";
-import {mainsailTheme} from "@/plugins/codemirrorTheme";
-import {StreamLanguage} from "@codemirror/stream-parser";
-import { klipper_config } from "@/plugins/StreamParserKlipperConfig";
-import { gcode } from "@/plugins/StreamParserGcode";
-import {EditorView, keymap} from "@codemirror/view";
-import {defaultTabBinding} from "@codemirror/commands";
-import {yaml} from "@/plugins/StreamParserYaml";
+import { Component, Mixins, Prop, Ref, Watch } from 'vue-property-decorator'
+import BaseMixin from '../mixins/base'
+import { basicSetup } from 'codemirror'
+import { EditorView, keymap } from '@codemirror/view'
+import { EditorState } from '@codemirror/state'
+import { vscodeDark } from '@uiw/codemirror-theme-vscode'
+import { StreamLanguage } from '@codemirror/language'
+import { klipper_config } from '@/plugins/StreamParserKlipperConfig'
+import { gcode } from '@/plugins/StreamParserGcode'
+import { indentWithTab } from '@codemirror/commands'
+import { json } from '@codemirror/lang-json'
+import { css } from '@codemirror/lang-css'
+import { indentUnit } from '@codemirror/language'
 
 @Component
 export default class Codemirror extends Mixins(BaseMixin) {
@@ -30,21 +27,19 @@ export default class Codemirror extends Mixins(BaseMixin) {
     private codemirror: null | EditorView = null
     private cminstance: null | EditorView = null
 
-    $refs!: {
-        codemirror: HTMLElement
-    }
+    @Ref('editor') editor!: HTMLElement
 
     @Prop({ required: false, default: '' })
-    readonly code!: string
+    declare readonly code: string
 
     @Prop({ required: false, default: '' })
-    value!: string
+    declare value: string
 
     @Prop({ required: false, default: 'codemirror' })
-    readonly name!: string
+    declare readonly name: string
 
     @Prop({ required: false, default: '' })
-    readonly fileExtension!: string
+    declare readonly fileExtension: string
 
     @Watch('value')
     valueChanged(newVal: string) {
@@ -68,10 +63,9 @@ export default class Codemirror extends Mixins(BaseMixin) {
 
     initialize() {
         this.codemirror = new EditorView({
-            parent: this.$refs.codemirror,
+            parent: this.editor,
         })
         this.cminstance = this.codemirror
-
 
         this.$nextTick(() => {
             this.setCmValue(this.code || this.value || this.content)
@@ -86,23 +80,47 @@ export default class Codemirror extends Mixins(BaseMixin) {
 
     get cmExtensions() {
         const extensions = [
+            EditorView.theme({}, { dark: true }),
             basicSetup,
-            keymap.of([defaultTabBinding]),
-            mainsailTheme,
-            EditorView.updateListener.of(update => {
+            vscodeDark,
+            indentUnit.of(' '.repeat(this.tabSize)),
+            keymap.of([indentWithTab]),
+            EditorView.updateListener.of((update) => {
+                if (update.selectionSet) {
+                    const line = this.cminstance?.state?.doc.lineAt(this.cminstance?.state?.selection.main.head).number
+                    this.$emit('lineChange', line)
+                }
                 this.content = update.state?.doc.toString()
                 if (this.$emit) {
                     this.$emit('input', this.content)
                 }
-            })
+            }),
         ]
 
-        if (['cfg', 'conf'].includes(this.fileExtension))
-            extensions.push(StreamLanguage.define(klipper_config))
-        else if (['gcode'].includes(this.fileExtension))
-            extensions.push(StreamLanguage.define(gcode))
+        if (['cfg', 'conf'].includes(this.fileExtension)) extensions.push(StreamLanguage.define(klipper_config))
+        else if (['gcode'].includes(this.fileExtension)) extensions.push(StreamLanguage.define(gcode))
+        else if (['json'].includes(this.fileExtension)) extensions.push(json())
+        else if (['css', 'scss', 'sass'].includes(this.fileExtension)) extensions.push(css())
 
         return extensions
+    }
+
+    visibilityChanged(isVisible: boolean) {
+        if (isVisible) this.cminstance?.focus()
+    }
+
+    get tabSize() {
+        return this.$store.state.gui.editor.tabSize || 2
+    }
+
+    gotoLine(line: number) {
+        const l = this.cminstance?.state?.doc.line(line)
+        if (!l) return
+
+        this.cminstance?.dispatch({
+            selection: { head: l.from, anchor: l.to },
+            scrollIntoView: true,
+        })
     }
 }
 </script>

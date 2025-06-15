@@ -1,69 +1,64 @@
 import Vue from 'vue'
 import { getDefaultState } from './index'
-import {MutationTree} from "vuex";
-import {PrinterState} from "@/store/printer/types";
+import { MutationTree } from 'vuex'
+import { PrinterState } from '@/store/printer/types'
 
 export const mutations: MutationTree<PrinterState> = {
-	reset(state) {
-		const defaultState = getDefaultState()
+    reset(state) {
+        const defaultState = getDefaultState()
 
-		for (const key of Object.keys(state)) {
-			if (!(key in defaultState) && key !== "tempHistory") {
-				delete state[key]
-			}
-		}
+        for (const key of Object.keys(state)) {
+            if (!(key in defaultState) && key !== 'tempHistory') {
+                delete state[key]
+            }
+        }
 
-		for (const [key, value] of Object.entries(defaultState)) {
-			Vue.set(state, key, value)
-		}
-	},
+        for (const [key, value] of Object.entries(defaultState)) {
+            Vue.set(state, key, value)
+        }
+    },
 
-	setData(state, payload) {
-		const setDataDeep = (currentState: any, payload: any) => {
-			if (payload !== null && typeof payload === 'object') {
-				Object.keys(payload).forEach((key: string) => {
-					const value = payload[key]
+    setData(state, payload) {
+        Object.keys(payload).forEach((key) => {
+            const value = payload[key]
 
-					if (typeof value === 'object' && !Array.isArray(value) && key in currentState && value !== null) {
-						setDataDeep(currentState[key], value)
-					} else if (key === "temperature") {
-						const newValue = Math.round(value * 10) / 10
-						if (currentState[key] !== newValue) Vue.set(currentState, key, newValue)
-					} else Vue.set(currentState, key, value)
-				})
-			}
-		}
+            if (typeof value !== 'object' || value === null || !(key in state)) {
+                Vue.set(state, key, value)
+                return
+            }
 
-		setDataDeep(state, payload)
-	},
+            if (typeof value === 'object') {
+                Object.keys(value).forEach((subkey) => {
+                    Vue.set(state[key], subkey, value[subkey])
+                })
+            }
+        })
+    },
 
-	setHelplist(state, payload) {
-		const helplist = [];
+    setBedMeshProfiles(state, payload) {
+        if ('bed_mesh' in state) {
+            Vue.set(state.bed_mesh, 'profiles', payload)
+        }
+    },
 
-		for (const [command, description] of Object.entries(payload)) {
-			helplist.push({
-				'commandLow': command.toLowerCase(),
-				'command': command,
-				'description': description,
-			})
-		}
+    clearCurrentFile(state) {
+        Vue.set(state, 'current_file', {})
+    },
 
-		Vue.set(state, "helplist", helplist)
-	},
+    setEndstopStatus(state, payload) {
+        delete payload.requestParams
 
-	clearCurrentFile(state) {
-		Vue.set(state, 'current_file', {})
-	},
+        Vue.set(state, 'endstops', payload)
+    },
 
-	setEndstopStatus(state, payload) {
-		delete payload.requestParams;
+    removeBedMeshProfile(state, payload) {
+        if ('bed_mesh ' + payload.name in state.configfile.config) {
+            Object.assign(state.configfile.config['bed_mesh ' + payload.name], { deleted: true })
+        }
+    },
 
-		Vue.set(state, 'endstops', payload);
-	},
-
-	removeBedMeshProfile(state, payload) {
-		if ('bed_mesh '+payload.name in state.configfile.config) {
-			Object.assign(state.configfile.config['bed_mesh '+payload.name], { deleted: true })
-		}
-	}
+    clearScrewsTiltAdjust(state) {
+        Vue.set(state.screws_tilt_adjust, 'error', false)
+        Vue.set(state.screws_tilt_adjust, 'results', {})
+    },
 }
