@@ -1,19 +1,29 @@
 <template>
     <v-dialog v-model="showDialog" persistent :width="400">
-        <v-card dark>
-            <v-toolbar flat dense color="primary">
-                <v-toolbar-title>
-                    <span class="subheading">
-                        <v-icon class="mdi mdi-connection" left></v-icon>
-                        <template v-if="connectingFailed">{{ $t("ConnectionDialog.Failed", {'host': formatHostname}) }}</template>
-                        <template v-else-if="isConnecting">{{ $t("ConnectionDialog.Connecting", {'host': formatHostname}) }}</template>
-                        <template v-else-if="needLogin">{{ $t("ConnectionDialog.Login") }}</template>
-                        <template v-else>{{ formatHostname }}</template>
-                    </span>
-                </v-toolbar-title>
-            </v-toolbar>
-            <v-card-text class="pt-5" v-if="isConnecting">
-                <v-progress-linear color="white" indeterminate></v-progress-linear>
+        <panel :title="titleText" :icon="mdiConnection" card-class="the-connection-dialog" :margin-bottom="false">
+            <v-card-text v-if="connectingFailed" class="pt-5">
+                <connection-status :moonraker="false" />
+                <p class="text-center mt-3 mb-0">
+                    {{ $t('ConnectionDialog.CannotConnectTo', { host: formatHostname }) }}
+                </p>
+                <p v-if="connectionFailedMessage" class="text-center mt-1 red--text">
+                    {{ $t('ConnectionDialog.ErrorMessage', { message: connectionFailedMessage }) }}
+                </p>
+                <template v-if="counter > 2">
+                    <v-divider class="my-3" />
+                    <p>{{ $t('ConnectionDialog.CheckMoonrakerLog') }}</p>
+                    <ul>
+                        <li>~/printer_data/logs/moonraker.log</li>
+                    </ul>
+                    <v-divider class="mt-4 mb-5" />
+                </template>
+                <div class="text-center mt-3">
+                    <v-btn v-if="helpButtonUrl" class="text--disabled mr-3" :href="helpButtonUrl" target="_blank">
+                        <v-icon left>{{ mdiHelp }}</v-icon>
+                        {{ $t('ConnectionDialog.Help') }}
+                    </v-btn>
+                    <v-btn class="primary--text" @click="reconnect">{{ $t('ConnectionDialog.TryAgain') }}</v-btn>
+                </div>
             </v-card-text>
             <v-card-text class="pt-5" v-else-if="needLogin">
                 <v-form v-model="form.valid" @submit.prevent="login">
@@ -63,34 +73,6 @@
                         </v-col>
                     </v-row>
                 </v-form>
-            </v-card-text>
-            <v-card-text class="pt-5" v-if="!isConnecting && connectingFailed">
-                <connection-status :moonraker="false"></connection-status>
-                <p class="text-center mt-3">{{ $t("ConnectionDialog.CannotConnectTo", {'host': formatHostname}) }}</p>
-        <panel :title="titleText" :icon="mdiConnection" card-class="the-connection-dialog" :margin-bottom="false">
-            <v-card-text v-if="connectingFailed" class="pt-5">
-                <connection-status :moonraker="false" />
-                <p class="text-center mt-3 mb-0">
-                    {{ $t('ConnectionDialog.CannotConnectTo', { host: formatHostname }) }}
-                </p>
-                <p v-if="connectionFailedMessage" class="text-center mt-1 red--text">
-                    {{ $t('ConnectionDialog.ErrorMessage', { message: connectionFailedMessage }) }}
-                </p>
-                <template v-if="counter > 2">
-                    <v-divider class="my-3" />
-                    <p>{{ $t('ConnectionDialog.CheckMoonrakerLog') }}</p>
-                    <ul>
-                        <li>~/printer_data/logs/moonraker.log</li>
-                    </ul>
-                    <v-divider class="mt-4 mb-5" />
-                </template>
-                <div class="text-center mt-3">
-                    <v-btn v-if="helpButtonUrl" class="text--disabled mr-3" :href="helpButtonUrl" target="_blank">
-                        <v-icon left>{{ mdiHelp }}</v-icon>
-                        {{ $t('ConnectionDialog.Help') }}
-                    </v-btn>
-                    <v-btn class="primary--text" @click="reconnect">{{ $t('ConnectionDialog.TryAgain') }}</v-btn>
-                </div>
             </v-card-text>
             <v-card-text v-else class="pt-5">
                 <v-progress-linear :color="progressBarColor" indeterminate />
@@ -165,6 +147,7 @@ export default class TheConnectingDialog extends Mixins(BaseMixin, ThemeMixin) {
     get titleText() {
         if (this.connectingFailed) return this.$t('ConnectionDialog.Failed', { host: this.formatHostname })
         if (this.isConnecting) return this.$t('ConnectionDialog.Connecting', { host: this.formatHostname })
+        if (this.needLogin) return this.$t('ConnectionDialog.Login')
         if (!this.guiIsReady) return this.$t('ConnectionDialog.Initializing')
 
         return this.formatHostname
