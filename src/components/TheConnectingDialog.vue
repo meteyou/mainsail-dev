@@ -106,6 +106,7 @@ import BaseMixin from '@/components/mixins/base'
 import ThemeMixin from '@/components/mixins/theme'
 import ConnectionStatus from '@/components/ui/ConnectionStatus.vue'
 import { mdiConnection, mdiHelp } from '@mdi/js'
+import axios from "axios";
 
 @Component({
     components: {

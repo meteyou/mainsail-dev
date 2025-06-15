@@ -146,13 +146,13 @@ export const actions: ActionTree<SocketState, RootState> = {
                 dispatch('server/history/getChanged', payload.params[0], { root: true })
                 break
 
-			case 'notify_user_created':
-				dispatch('server/authorization/notifyUserCreated', payload.params[0], { root: true })
-				break
+            case 'notify_user_created':
+                dispatch('server/authorization/notifyUserCreated', payload.params[0], { root: true })
+                break
 
-			case 'notify_user_deleted':
-				dispatch('server/authorization/notifyUserDeleted', payload.params[0], { root: true })
-				break
+            case 'notify_user_deleted':
+                dispatch('server/authorization/notifyUserDeleted', payload.params[0], { root: true })
+                break
 
             case 'notify_service_state_changed':
                 dispatch('server/serviceStateChanged', payload.params[0], { root: true })
