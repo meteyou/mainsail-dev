@@ -45,7 +45,10 @@
                                         hide-details
                                         class="mt-0 pt-0" />
                                 </div>
-                                <mmu-ttg-map :selected-tool="selectedTool" :filtered-ttg-map="filteredTtgMap" />
+                                <mmu-ttg-map
+                                    :selected-tool="selectedTool"
+                                    :selected-gate="selectedGate"
+                                    :filtered-ttg-map="filteredTtgMap" />
                             </v-col>
                         </v-row>
                     </v-col>
@@ -98,7 +101,8 @@ export default class MmuEditTtgMapDialog extends Mixins(BaseMixin, MmuMixin) {
     @Prop({ default: null }) readonly file!: FileStateGcodefile | null
 
     allTools = true
-    selectedTool = -1
+    selectedTool = TOOL_GATE_UNKNOWN
+    selectedGate = TOOL_GATE_UNKNOWN
     showResetDialog = false
 
     get titleHeader() {
@@ -139,10 +143,12 @@ export default class MmuEditTtgMapDialog extends Mixins(BaseMixin, MmuMixin) {
     selectTool(tool: number) {
         if (this.selectedTool === tool) {
             this.selectedTool = TOOL_GATE_UNKNOWN
+            this.selectedGate = TOOL_GATE_UNKNOWN
             return
         }
 
         this.selectedTool = tool
+        this.selectedGate = this.ttgMap[tool]
     }
 
     resetTtgMap() {

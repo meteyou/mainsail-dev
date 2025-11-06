@@ -17,7 +17,6 @@ import MmuMixin, {
     DIRECTION_LOAD,
     DIRECTION_UNKNOWN,
     FILAMENT_POS_START_BOWDEN,
-    FILAMENT_POS_UNLOADED,
 } from '@/components/mixins/mmu'
 
 @Component
@@ -31,10 +30,6 @@ export default class MmuFilamentStatusEncoder extends Mixins(BaseMixin, MmuMixin
     }
 
     get homedToEncoder(): boolean {
-        if (this.filamentDirection === DIRECTION_LOAD) {
-            return this.configGateHomingEndstop === 'encoder' && this.mmuFilamentPos === FILAMENT_POS_START_BOWDEN
-        }
-
         return this.configGateHomingEndstop === 'encoder' && this.mmuFilamentPos === FILAMENT_POS_START_BOWDEN
     }
 

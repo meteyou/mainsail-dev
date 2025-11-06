@@ -161,7 +161,15 @@ export default class MmuEditTtgMapDialogDetails extends Mixins(BaseMixin, MmuMix
     }
 
     selectGate(gate: number) {
-        this.doSend(`MMU_REMAP_TTG TOOL=${this.tool} GATE=${gate} QUIET=1`)
+        this.doSend(`MMU_TTG_MAP TOOL=${this.tool} GATE=${gate} QUIET=1`)
+    }
+
+    rationalizeGroups(groups: readonly number[]): number[] {
+        const firstIndex = new Map<number, number>()
+        return groups.map((id, i) => {
+            if (!firstIndex.has(id)) firstIndex.set(id, i)
+            return firstIndex.get(id)!
+        })
     }
 
     selectEndlessSpoolGroup(gate: number) {
@@ -169,12 +177,21 @@ export default class MmuEditTtgMapDialogDetails extends Mixins(BaseMixin, MmuMix
 
         // copy the array to change one value
         const groups = [...this.endlessSpoolGroups]
-        // get the current group of the selected gate
-        const selectedGroup = groups[this.selectedGate]
-        // toggle the group of the clicked gate
-        groups[gate] = groups[gate] === selectedGroup ? gate : selectedGroup
 
-        this.doSend(`MMU_ENDLESS_SPOOL GROUPS="${groups.join(',')}" QUIET=1`)
+        // get the current group of the selected gate and empty group
+        const selectedGroup = groups[this.selectedGate]
+        const newGroup = (() => {
+            // find mex
+            const s = new Set(groups)
+            let m = 0
+            while (s.has(m)) m++
+            return m
+        })()
+
+        // set or clear current gates endless spool group
+        groups[gate] = groups[gate] === selectedGroup ? newGroup : selectedGroup
+
+        this.doSend(`MMU_ENDLESS_SPOOL GROUPS="${this.rationalizeGroups(groups).join(',')}" QUIET=1`)
     }
 }
 </script>
