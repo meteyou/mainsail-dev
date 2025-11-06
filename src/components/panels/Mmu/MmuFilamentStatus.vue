@@ -24,7 +24,16 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 style="stroke: var(--color-outline)">
-                <rect x="0" y="0" width="36" height="45" rx="3" ry="3" class="fil-background" stroke-width="2" fill-opacity="0.6" />
+                <rect
+                    x="0"
+                    y="0"
+                    width="36"
+                    height="45"
+                    rx="3"
+                    ry="3"
+                    class="fil-background"
+                    stroke-width="2"
+                    fill-opacity="0.6" />
                 <path d="M-3 10 0 10 M-3 22 0.5 22 M-3 34.5 0 34.5" stroke-width="2" stroke-opacity="0.6" />
                 <path d="M8 0 L 28 0" stroke-width="4" />
             </g>
