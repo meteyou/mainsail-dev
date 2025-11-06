@@ -62,7 +62,11 @@
                     <div v-if="selectedTool === -1" class="overlay-text">
                         {{ $t('Panels.MmuPanel.TtgMapDialog.SelectTool') }}
                     </div>
-                    <mmu-edit-ttg-map-dialog-details v-else :tool="selectedTool" :file="file" />
+                    <mmu-edit-ttg-map-dialog-details
+                        v-else
+                        :tool="selectedTool"
+                        :file="file"
+                        @select-gate="selectGate" />
                 </transition>
             </v-card-text>
 
@@ -138,6 +142,10 @@ export default class MmuEditTtgMapDialog extends Mixins(BaseMixin, MmuMixin) {
         })
 
         return ttgMap
+    }
+
+    selectGate(gate: number) {
+        this.selectedGate = gate
     }
 
     selectTool(tool: number) {

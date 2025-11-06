@@ -162,6 +162,7 @@ export default class MmuEditTtgMapDialogDetails extends Mixins(BaseMixin, MmuMix
 
     selectGate(gate: number) {
         this.doSend(`MMU_TTG_MAP TOOL=${this.tool} GATE=${gate} QUIET=1`)
+        this.$emit('select-gate', gate)
     }
 
     rationalizeGroups(groups: readonly number[]): number[] {
