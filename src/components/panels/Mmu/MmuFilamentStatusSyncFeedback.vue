@@ -1,6 +1,7 @@
 <template>
     <g v-if="hasSyncFeedback">
-        <use xlink:href="#sync-feedback-buffer-piston"
+        <use
+xlink:href="#sync-feedback-buffer-piston"
              :style="{transform: `translate(232px, ${syncFeedbackPistonPos}px)`, transition: 'transform 250ms ease'}" />
         <use xlink:href="#sync-feedback-buffer-box" transform="translate(232, 212)" />
         <g v-if="syncFeedbackActive">
