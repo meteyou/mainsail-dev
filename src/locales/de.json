@@ -36,6 +36,7 @@
             "OneWeekShort": "1W",
             "Remind": "Erinnere:",
             "ShowDetails": "Details anzeigen",
+            "testvariable": "test1",
             "TmcOtFlag": "Stepper-Treiber Fehler: OT-Flag ist gesetzt",
             "TmcOtFlagText": "Der Stepper-Treiber '{Name}' hat das OT-Flag ausgelöst und funktioniert nicht mehr. Dies kann durch einen zu hohen Strom verursacht werden. Bitte überprüfe die Einstellungen und die Kühlung des Steppertreibers.",
             "TmcOtpwFlag": "Stepper-Treiber Fehler: OTPW-Flag ist gesetzt",
