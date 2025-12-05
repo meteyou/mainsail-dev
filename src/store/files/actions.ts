@@ -10,7 +10,7 @@ import {
 import { RootState } from '@/store/types'
 import i18n from '@/plugins/i18n'
 import { hiddenDirectories, validGcodeExtensions } from '@/store/variables'
-import axios, { AxiosProgressEvent } from 'axios'
+import { AxiosProgressEvent } from 'axios'
 import { BatchMessage } from '@/plugins/webSocketClient'
 
 export const actions: ActionTree<FileState, RootState> = {
@@ -310,13 +310,12 @@ export const actions: ActionTree<FileState, RootState> = {
         }
     },
 
-    async uploadFile({ commit, rootGetters }, payload: { file: File; path: string; root: 'gcodes' | 'config' }) {
-        const apiUrl = rootGetters['socket/getUrl']
+    async uploadFile({ commit }, payload: { file: File; path: string; root: 'gcodes' | 'config' }) {
         const formData = new FormData()
         formData.append('file', payload.file, payload.file.name)
         formData.append('root', payload.root)
         formData.append('path', payload.path)
-        const cancelTokenSource = axios.CancelToken.source()
+        const cancelTokenSource = Vue.$http.createCancelToken()
 
         await commit('uploadClearState')
         await commit('uploadSetCancelTokenSource', cancelTokenSource)
@@ -324,8 +323,8 @@ export const actions: ActionTree<FileState, RootState> = {
         await commit('uploadSetShow', true)
 
         return new Promise((resolve) => {
-            axios
-                .post(apiUrl + '/server/files/upload', formData, {
+            Vue.$http
+                .post('/server/files/upload', formData, {
                     cancelToken: cancelTokenSource.token,
                     headers: { 'Content-Type': 'multipart/form-data' },
                     onUploadProgress: (progressEvent: AxiosProgressEvent) => {

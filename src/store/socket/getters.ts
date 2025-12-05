@@ -7,7 +7,6 @@ export const getters: GetterTree<SocketState, RootState> = {
         const port = state.port !== 80 ? ':' + state.port : ''
         let path = '/' + state.path.replace(/^\/|\/$/g, '')
 
-        // remove last / in path
         if (path.endsWith('/')) path = path.slice(0, -1)
 
         return `//${state.hostname}${port}${path}`
@@ -22,4 +21,8 @@ export const getters: GetterTree<SocketState, RootState> = {
     getWebsocketUrl: (state, getters) => {
         return state.protocol + ':' + getters['getUrl'] + '/websocket'
     },
+
+    isAuthenticated: (state) => state.accessToken !== null || state.isTrustedClient,
+
+    isLoginRequired: (state) => (state.loginRequired || !state.isTrustedClient) && !state.accessToken,
 }

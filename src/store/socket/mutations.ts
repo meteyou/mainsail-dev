@@ -67,18 +67,39 @@ export const mutations: MutationTree<SocketState> = {
     removeInitComponent(state, payload) {
         const list = [...state.initializationList]
 
-        // remove all components witch starts with payload
         const indexes = list.reduce((acc: number[], item, index) => {
             if (item.startsWith(payload)) acc.push(index)
             return acc
         }, [])
 
-        // stop if no items found
         if (!indexes.length) return
 
-        // remove all items
         indexes.forEach((index) => list.splice(index, 1))
 
         Vue.set(state, 'initializationList', list)
+    },
+
+    setAuthTokens(state, payload: { accessToken: string; refreshToken: string; username: string; source: string }) {
+        Vue.set(state, 'accessToken', payload.accessToken)
+        Vue.set(state, 'refreshToken', payload.refreshToken)
+        Vue.set(state, 'username', payload.username)
+        Vue.set(state, 'authSource', payload.source)
+    },
+
+    clearAuth(state) {
+        Vue.set(state, 'accessToken', null)
+        Vue.set(state, 'refreshToken', null)
+        Vue.set(state, 'username', null)
+        Vue.set(state, 'authSource', null)
+    },
+
+    setAuthInfo(
+        state,
+        payload: { loginRequired: boolean; trusted: boolean; availableSources: string[]; defaultSource: string }
+    ) {
+        Vue.set(state, 'loginRequired', payload.loginRequired)
+        Vue.set(state, 'isTrustedClient', payload.trusted)
+        Vue.set(state, 'availableAuthSources', payload.availableSources)
+        Vue.set(state, 'defaultAuthSource', payload.defaultSource)
     },
 }

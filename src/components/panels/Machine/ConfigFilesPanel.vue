@@ -539,7 +539,7 @@ import BaseMixin from '@/components/mixins/base'
 import ThemeMixin from '@/components/mixins/theme'
 import { escapePath, formatFilesize, sortFiles } from '@/plugins/helpers'
 import { FileStateFile, FileStateGcodefile } from '@/store/files/types'
-import axios from 'axios'
+
 import Panel from '@/components/ui/Panel.vue'
 import PathNavigation from '@/components/ui/PathNavigation.vue'
 import { hiddenRootDirectories } from '@/store/variables'
@@ -1147,8 +1147,8 @@ export default class ConfigFilesPanel extends Mixins(BaseMixin, ThemeMixin) {
         formData.append('root', this.root)
         if (this.currentPath.length) formData.append('path', this.currentPath.slice(1))
 
-        axios
-            .post(this.apiUrl + '/server/files/upload', formData, {
+        this.$http
+            .post('/server/files/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             })
             .then(() => {

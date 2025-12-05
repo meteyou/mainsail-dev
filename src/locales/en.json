@@ -479,6 +479,15 @@
         "Start": "Start",
         "StartPrint": "Start Job"
     },
+    "LoginDialog": {
+        "AuthSource": "Authentication Source",
+        "Login": "Login",
+        "LoginFailed": "Login failed. Please check your credentials.",
+        "Password": "Password",
+        "PasswordRequired": "Password is required",
+        "Username": "Username",
+        "UsernameRequired": "Username is required"
+    },
     "Machine": {
         "ConfigFilesPanel": {
             "AllFiles": "All",

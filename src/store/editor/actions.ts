@@ -1,11 +1,11 @@
 import { ActionTree } from 'vuex'
 import { EditorState } from '@/store/editor/types'
 import { RootState } from '@/store/types'
-import axios from 'axios'
 import { sha256 } from 'js-sha256'
 import Vue from 'vue'
 import i18n from '@/plugins/i18n'
 import { escapePath, formatFilesize, windowBeforeUnloadFunction } from '@/plugins/helpers'
+import { AxiosResponse } from 'axios'
 
 export const actions: ActionTree<EditorState, RootState> = {
     reset({ commit }) {
@@ -21,7 +21,7 @@ export const actions: ActionTree<EditorState, RootState> = {
         })
     },
 
-    openFile({ state, dispatch, commit, rootGetters }, payload) {
+    openFile({ state, dispatch, commit }, payload) {
         const fullFilepathArray = []
         fullFilepathArray.push(payload.root)
         let path = payload.path
@@ -31,22 +31,21 @@ export const actions: ActionTree<EditorState, RootState> = {
         fullFilepathArray.push(payload.filename)
 
         const fullFilepath = fullFilepathArray.join('/')
-        const url = rootGetters['socket/getUrl'] + '/server/files/' + escapePath(fullFilepath) + `?${Date.now()}`
+        const url = `/server/files/${escapePath(fullFilepath)}?${Date.now()}`
 
         if (state.cancelToken) dispatch('cancelLoad')
 
-        const CancelToken = axios.CancelToken
-        const source = CancelToken.source()
+        const source = Vue.$http.createCancelToken()
         commit('updateCancelTokenSource', source)
         commit('updateLoaderState', true)
 
         commit('setFilename', payload.filename)
         commit('setPermissions', payload.permissions)
 
-        axios
+        Vue.$http
             .get(url, {
                 cancelToken: source.token,
-                onDownloadProgress: (progressEvent) =>
+                onDownloadProgress: (progressEvent: any) =>
                     dispatch('downloadProgress', {
                         progressEvent,
                         direction: 'downloading',
@@ -54,8 +53,8 @@ export const actions: ActionTree<EditorState, RootState> = {
                     }),
                 responseType: 'blob',
             })
-            .then((res) => res.data.text())
-            .then((file) => {
+            .then((res: AxiosResponse<Blob>) => res.data.text())
+            .then((file: any) => {
                 commit('openFile', {
                     filename: payload.filename,
                     fileroot: payload.root,
@@ -71,7 +70,7 @@ export const actions: ActionTree<EditorState, RootState> = {
     },
 
     async saveFile(
-        { state, commit, getters, rootGetters, dispatch },
+        { state, commit, getters, dispatch },
         payload: { content: string; restartServiceName: string | null }
     ) {
         const content = new Blob([payload.content], { type: 'text/plain' })
@@ -81,27 +80,25 @@ export const actions: ActionTree<EditorState, RootState> = {
         formData.append('path', state.filepath)
         formData.append('checksum', sha256(payload.content))
 
-        const url = rootGetters['socket/getUrl'] + '/server/files/upload'
         if (state.cancelToken) dispatch('cancelLoad')
-        const CancelToken = axios.CancelToken
-        const source = CancelToken.source()
+        const source = Vue.$http.createCancelToken()
         commit('updateCancelTokenSource', source)
         commit('updateLoaderState', true)
 
-        axios
-            .post(url, formData, {
+        Vue.$http
+            .post('/server/files/upload', formData, {
                 cancelToken: source.token,
-                onUploadProgress: (progressEvent) =>
+                onUploadProgress: (progressEvent: any) =>
                     dispatch('downloadProgress', {
                         progressEvent,
                         direction: 'uploading',
                         filesize: null,
                     }),
             })
-            .then((response) => {
+            .then((response: any) => {
                 return response.data
             })
-            .then((data) => {
+            .then((data: any) => {
                 dispatch('clearLoader')
                 Vue.$toast.success(i18n.t('Editor.SuccessfullySaved', { filename: data.item.path }).toString())
                 if (payload.restartServiceName === 'klipper') {
@@ -117,7 +114,7 @@ export const actions: ActionTree<EditorState, RootState> = {
 
                 if (payload.restartServiceName !== null) dispatch('close')
             })
-            .catch((error) => {
+            .catch((error: any) => {
                 window.console.log(error.response?.data.error)
                 dispatch('clearLoader')
                 Vue.$toast.error(i18n.t('Editor.FailedSave', { filename: state.filename }).toString())

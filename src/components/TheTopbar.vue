@@ -53,6 +53,9 @@
                 <v-icon class="mr-md-2">{{ mdiAlertOctagonOutline }}</v-icon>
                 <span class="d-none d-md-inline">{{ $t('App.TopBar.EmergencyStop') }}</span>
             </v-btn>
+            <v-btn v-if="isAuthenticated" tile icon class="button-min-width-auto" @click="logout">
+                <v-icon>{{ mdiLogout }}</v-icon>
+            </v-btn>
             <the-notification-menu />
             <the-settings-menu />
             <the-top-corner-menu />
@@ -78,7 +81,7 @@ import { Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import { validGcodeExtensions } from '@/store/variables'
 import Component from 'vue-class-component'
-import axios, { AxiosProgressEvent } from 'axios'
+import { AxiosProgressEvent } from 'axios'
 import { formatFilesize } from '@/plugins/helpers'
 import TheTopCornerMenu from '@/components/TheTopCornerMenu.vue'
 import TheSettingsMenu from '@/components/TheSettingsMenu.vue'
@@ -87,7 +90,7 @@ import PrinterSelector from '@/components/ui/PrinterSelector.vue'
 import MainsailLogo from '@/components/ui/MainsailLogo.vue'
 import TheNotificationMenu from '@/components/notifications/TheNotificationMenu.vue'
 import { topbarHeight } from '@/store/variables'
-import { mdiAlertOctagonOutline, mdiContentSave, mdiFileUpload, mdiClose, mdiCloseThick } from '@mdi/js'
+import { mdiAlertOctagonOutline, mdiContentSave, mdiFileUpload, mdiClose, mdiCloseThick, mdiLogout } from '@mdi/js'
 import EmergencyStopDialog from '@/components/dialogs/EmergencyStopDialog.vue'
 import InlineSvg from 'vue-inline-svg'
 import ThemeMixin from '@/components/mixins/theme'
@@ -119,6 +122,7 @@ export default class TheTopbar extends Mixins(BaseMixin, ThemeMixin) {
     mdiFileUpload = mdiFileUpload
     mdiClose = mdiClose
     mdiCloseThick = mdiCloseThick
+    mdiLogout = mdiLogout
 
     topbarHeight = topbarHeight
 
@@ -214,6 +218,10 @@ export default class TheTopbar extends Mixins(BaseMixin, ThemeMixin) {
         return this.$store.state.gui?.uiSettings?.defaultNavigationStateSetting ?? 'alwaysOpen'
     }
 
+    get isAuthenticated(): boolean {
+        return this.$store.state.socket.accessToken !== null
+    }
+
     mounted() {
         //this.naviDrawer = this.$vuetify.breakpoint.lgAndUp
         switch (this.defaultNavigationStateSetting) {
@@ -287,9 +295,9 @@ export default class TheTopbar extends Mixins(BaseMixin, ThemeMixin) {
         formData.append('print', 'true')
 
         return new Promise((resolve) => {
-            this.uploadSnackbar.cancelTokenSource = axios.CancelToken.source()
-            axios
-                .post(this.apiUrl + '/server/files/upload', formData, {
+            this.uploadSnackbar.cancelTokenSource = this.$http.createCancelToken()
+            this.$http
+                .post('/server/files/upload', formData, {
                     cancelToken: this.uploadSnackbar.cancelTokenSource.token,
                     headers: { 'Content-Type': 'multipart/form-data' },
                     onUploadProgress: (progressEvent: AxiosProgressEvent) => {
@@ -300,7 +308,7 @@ export default class TheTopbar extends Mixins(BaseMixin, ThemeMixin) {
                 })
                 .then((result) => {
                     this.uploadSnackbar.status = false
-                    resolve(result.data.result)
+                    resolve(result.data)
                 })
                 .catch(() => {
                     this.uploadSnackbar.status = false
@@ -314,6 +322,12 @@ export default class TheTopbar extends Mixins(BaseMixin, ThemeMixin) {
     cancelUpload(): void {
         this.uploadSnackbar.cancelTokenSource.cancel()
         this.uploadSnackbar.status = false
+    }
+
+    async logout(): Promise<void> {
+        await this.$store.dispatch('socket/logout')
+        this.$socket.close()
+        window.location.reload()
     }
 }
 </script>

@@ -21,6 +21,10 @@ export default class BaseMixin extends Vue {
         return this.$store.state.instancesDB ?? 'moonraker'
     }
 
+    get isLoginRequired() {
+        return this.$store.getters['socket/isLoginRequired']
+    }
+
     get socketIsConnected(): boolean {
         return this.$store.state.socket.isConnected ?? false
     }

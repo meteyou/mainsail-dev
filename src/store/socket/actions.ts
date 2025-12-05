@@ -1,6 +1,14 @@
 import Vue from 'vue'
 import { ActionTree } from 'vuex'
-import { SocketState } from '@/store/socket/types'
+import {
+    MoonrakerAuthInfo,
+    MoonrakerAuthLoginRequest,
+    MoonrakerAuthLoginResponse,
+    MoonrakerAuthLogoutResponse,
+    MoonrakerAuthRefreshJwtRequest,
+    MoonrakerAuthRefreshJwtResponse,
+    SocketState,
+} from '@/store/socket/types'
 import { RootState } from '@/store/types'
 
 export const actions: ActionTree<SocketState, RootState> = {
@@ -176,5 +184,72 @@ export const actions: ActionTree<SocketState, RootState> = {
 
     setConnectionFailed({ commit }, payload) {
         commit('setDisconnected', payload)
+    },
+
+    async login({ commit }, payload: MoonrakerAuthLoginRequest) {
+        const response = await Vue.$http.post<MoonrakerAuthLoginResponse, MoonrakerAuthLoginRequest>(
+            '/access/login',
+            payload
+        )
+
+        commit('setAuthTokens', {
+            accessToken: response.data.token,
+            refreshToken: response.data.refresh_token,
+            username: response.data.username,
+            source: response.data.source,
+        })
+
+        Vue.$refreshTokenStorage.set(response.data.refresh_token, {
+            username: response.data.username,
+            source: response.data.source,
+        })
+
+        return response.data
+    },
+
+    async logout({ commit }) {
+        await Vue.$http.post<MoonrakerAuthLogoutResponse>('/access/logout')
+        commit('clearAuth')
+        Vue.$refreshTokenStorage.remove()
+    },
+
+    async refreshAccessToken({ commit, state }) {
+        const refreshToken = state.refreshToken || Vue.$refreshTokenStorage.getRefreshToken()
+        if (!refreshToken) throw new Error('No refresh token available')
+
+        const response = await Vue.$http.post<MoonrakerAuthRefreshJwtResponse, MoonrakerAuthRefreshJwtRequest>(
+            '/access/refresh_jwt',
+            {
+                refresh_token: refreshToken,
+            }
+        )
+
+        commit('setAuthTokens', {
+            accessToken: response.data.token,
+            refreshToken: refreshToken,
+            username: response.data.username,
+            source: response.data.source,
+        })
+
+        return response.data
+    },
+
+    async fetchAuthInfo({ commit }): Promise<MoonrakerAuthInfo> {
+        const response = await Vue.$http.get<MoonrakerAuthInfo>('/access/info')
+
+        commit('setAuthInfo', {
+            loginRequired: response.data.login_required,
+            trusted: response.data.trusted,
+            availableSources: response.data.available_sources,
+            defaultSource: response.data.default_source,
+        })
+
+        return response.data
+    },
+
+    async getOneshotToken(): Promise<string> {
+        const response = await Vue.$http.get<string>('/access/oneshot_token')
+
+        return response.data
     },
 }

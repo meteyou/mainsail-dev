@@ -24,6 +24,14 @@ export const getDefaultState = (): SocketState => {
         loadings: [],
         initializationList: ['server'],
         connection_id: null,
+        accessToken: null,
+        refreshToken: null,
+        username: null,
+        authSource: null,
+        loginRequired: false,
+        isTrustedClient: false,
+        availableAuthSources: ['moonraker'],
+        defaultAuthSource: 'moonraker',
     }
 }
 

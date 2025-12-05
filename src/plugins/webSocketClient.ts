@@ -90,17 +90,64 @@ export class WebSocketClient {
         this.removeWaitById(wait.id)
     }
 
-    async connect() {
+    async connect(resetReconnects: boolean = false) {
+        if (resetReconnects) {
+            this.reconnects = 0
+            this.store?.dispatch('socket/setData', { connectingFailed: false })
+        }
+
         this.store?.dispatch('socket/setData', {
             isConnecting: true,
         })
 
         this.instance?.close()
-        this.instance = new WebSocket(this.url)
+
+        try {
+            await this.store?.dispatch('socket/fetchAuthInfo')
+        } catch {
+            window.console.error('Failed to fetch auth info before websocket connect')
+
+            this.reconnects++
+            if (this.reconnects < this.maxReconnects) {
+                setTimeout(() => this.connect(), this.reconnectInterval)
+                return
+            }
+
+            // show connection failed after max reconnects
+            this.store?.dispatch('socket/setData', {
+                isConnecting: false,
+                connectingFailed: true,
+            })
+            return
+        }
+
+        if (this.store?.getters['socket/isLoginRequired']) {
+            const refreshToken = _Vue.$refreshTokenStorage.getRefreshToken()
+            if (refreshToken) {
+                try {
+                    await this.store?.dispatch('socket/refreshAccessToken')
+                } catch {
+                    this.store?.dispatch('socket/setData', { isConnecting: false })
+                    return
+                }
+            } else {
+                this.store?.dispatch('socket/setData', { isConnecting: false })
+                return
+            }
+        }
+
+        let wsUrl = this.url
+        const accessToken = this.store?.state.socket?.accessToken
+        if (accessToken && this.store) {
+            const oneshotToken = await this.store.dispatch('socket/getOneshotToken')
+            wsUrl = `${this.url}?token=${oneshotToken}`
+        }
+
+        this.instance = new WebSocket(wsUrl)
 
         this.instance.onopen = () => {
             this.reconnects = 0
-            this.store?.dispatch('socket/onOpen', event)
+            this.store?.dispatch('socket/onOpen')
         }
 
         this.instance.onclose = (e) => {

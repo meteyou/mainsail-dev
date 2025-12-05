@@ -277,7 +277,7 @@
 import { Component, Mixins, Prop, Ref, Watch } from 'vue-property-decorator'
 import BaseMixin from '../mixins/base'
 import GCodeViewer from '@sindarius/gcodeviewer'
-import axios, { AxiosProgressEvent } from 'axios'
+import { AxiosProgressEvent } from 'axios'
 import { escapePath, formatFilesize } from '@/plugins/helpers'
 import Panel from '@/components/ui/Panel.vue'
 import CodeStream from '@/components/gcodeviewer/CodeStream.vue'
@@ -627,11 +627,10 @@ export default class Viewer extends Mixins(BaseMixin) {
         this.downloadSnackbar.status = true
         this.downloadSnackbar.speed = 0
         this.downloadSnackbar.filename = filename.startsWith('gcodes/') ? filename.slice(7) : filename
-        const CancelToken = axios.CancelToken
-        this.downloadSnackbar.cancelTokenSource = CancelToken.source()
+        this.downloadSnackbar.cancelTokenSource = this.$http.createCancelToken()
 
-        const text = await axios
-            .get(this.apiUrl + '/server/files/' + escapePath(filename), {
+        const text = await this.$http
+            .get('/server/files/' + escapePath(filename), {
                 cancelToken: this.downloadSnackbar.cancelTokenSource.token,
                 responseType: 'blob',
                 onDownloadProgress: (progressEvent: AxiosProgressEvent) => {

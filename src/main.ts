@@ -7,6 +7,8 @@ import i18n, { setAndLoadLocale } from '@/plugins/i18n'
 import store from '@/store'
 import router from '@/plugins/router'
 import { WebSocketPlugin } from '@/plugins/webSocketClient'
+import { HttpClientPlugin } from '@/plugins/httpClient'
+import { RefreshTokenStoragePlugin } from '@/plugins/refreshTokenStorage'
 // vue-observe-visibility
 import { ObserveVisibility } from 'vue-observe-visibility'
 //vue-meta
@@ -89,7 +91,13 @@ const initLoad = async () => {
 
     const url = store.getters['socket/getWebsocketUrl']
     Vue.use(WebSocketPlugin, { url, store })
-    if (store?.state?.instancesDB === 'moonraker') Vue.$socket.connect()
+    Vue.use(HttpClientPlugin, { store })
+    Vue.use(RefreshTokenStoragePlugin, { store })
+
+    // auto connect websocket only if moonraker is used as instancesDB
+    if (store?.state?.instancesDB !== 'moonraker') return
+
+    Vue.$socket.connect()
 }
 
 initLoad().then(() =>
