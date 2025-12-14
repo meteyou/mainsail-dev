@@ -362,7 +362,6 @@
     },
     "History": {
         "AddANote": "Eine Notiz hinzufügen",
-        "AddMaintenance": "Wartung hinzufügen",
         "AddNote": "Notiz hinzufügen",
         "AddToQueueSuccessful": "Datei {filename} zur Warteschlange hinzugefügt.",
         "AllJobs": "Alle",
