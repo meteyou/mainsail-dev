@@ -7,15 +7,19 @@ import Vue from 'vue'
 import i18n from '@/plugins/i18n'
 import { escapePath, formatFilesize, windowBeforeUnloadFunction } from '@/plugins/helpers'
 
+const LOG_PREFIX = '[EDITOR]'
+const logError = (...args: unknown[]) => window.console.error(LOG_PREFIX, ...args)
+
 export const actions: ActionTree<EditorState, RootState> = {
-    reset({ commit }) {
+    reset({ commit, dispatch }): void {
+        dispatch('cancelLoad')
         commit('reset')
     },
 
     downloadProgress(
         { commit },
         payload: { progressEvent: AxiosProgressEvent; direction: string; filesize: number | null }
-    ) {
+    ): void {
         commit('updateLoader', {
             direction: payload.direction,
             speed: formatFilesize(payload.progressEvent.rate ?? 0),
@@ -24,9 +28,17 @@ export const actions: ActionTree<EditorState, RootState> = {
         })
     },
 
-    openFile({ state, dispatch, commit, rootGetters }, payload) {
-        const fullFilepathArray = []
-        fullFilepathArray.push(payload.root)
+    async openFile(
+        { state, dispatch, commit, rootGetters },
+        payload: {
+            root: string
+            path: string
+            filename: string
+            size: number
+            permissions: string
+        }
+    ): Promise<void> {
+        const fullFilepathArray = [payload.root]
         let path = payload.path
         if (path.slice(0, 1) === '/') path = path.slice(1)
         if (path.slice(-1) === '/') path = path.slice(0, -1)
@@ -34,22 +46,21 @@ export const actions: ActionTree<EditorState, RootState> = {
         fullFilepathArray.push(payload.filename)
 
         const fullFilepath = fullFilepathArray.join('/')
-        const url = rootGetters['socket/getUrl'] + '/server/files/' + escapePath(fullFilepath) + `?${Date.now()}`
+        const url = `${rootGetters['socket/getUrl']}/server/files/${escapePath(fullFilepath)}?${Date.now()}`
 
-        if (state.cancelToken) dispatch('cancelLoad')
+        // cancel previous load if it exists
+        dispatch('cancelLoad')
 
-        const CancelToken = axios.CancelToken
-        const source = CancelToken.source()
-        commit('updateCancelTokenSource', source)
+        const abortController = new AbortController()
+        commit('updateAbortController', abortController)
         commit('updateLoaderState', true)
 
         commit('setFilename', payload.filename)
-        commit('setPermissions', payload.permissions)
 
-        axios
-            .get(url, {
-                cancelToken: source.token,
-                onDownloadProgress: (progressEvent) =>
+        try {
+            const response = await axios.get<Blob>(url, {
+                signal: abortController.signal,
+                onDownloadProgress: (progressEvent): Promise<void> =>
                     dispatch('downloadProgress', {
                         progressEvent,
                         direction: 'downloading',
@@ -57,26 +68,34 @@ export const actions: ActionTree<EditorState, RootState> = {
                     }),
                 responseType: 'blob',
             })
-            .then((res) => res.data.text())
-            .then((file) => {
-                commit('openFile', {
-                    filename: payload.filename,
-                    fileroot: payload.root,
-                    filepath: path,
-                    file,
-                })
+
+            const content = await response.data.text()
+            if (state.abortController !== abortController) return
+
+            commit('openFile', {
+                filename: payload.filename,
+                fileroot: payload.root,
+                permissions: payload.permissions,
+                filepath: path,
+                file: content,
             })
-            .finally(() => {
-                setTimeout(() => {
-                    dispatch('clearLoader')
-                }, 100)
-            })
+        } catch (error) {
+            if (axios.isCancel(error)) return
+
+            logError(error)
+            Vue.$toast.error(i18n.t('Editor.FailedLoad', { filename: payload.filename }).toString())
+        } finally {
+            if (state.abortController === abortController) {
+                commit('updateAbortController', null)
+                dispatch('clearLoader')
+            }
+        }
     },
 
     async saveFile(
-        { state, commit, getters, rootGetters, dispatch },
+        { state, commit, dispatch, rootGetters, rootState },
         payload: { content: string; restartServiceName: string | null }
-    ) {
+    ): Promise<void> {
         const content = new Blob([payload.content], { type: 'text/plain' })
         const formData = new FormData()
         formData.append('file', content, state.filename)
@@ -85,15 +104,14 @@ export const actions: ActionTree<EditorState, RootState> = {
         formData.append('checksum', sha256(payload.content))
 
         const url = rootGetters['socket/getUrl'] + '/server/files/upload'
-        if (state.cancelToken) dispatch('cancelLoad')
-        const CancelToken = axios.CancelToken
-        const source = CancelToken.source()
-        commit('updateCancelTokenSource', source)
+        if (state.abortController) dispatch('cancelLoad')
+        const abortController = new AbortController()
+        commit('updateAbortController', abortController)
         commit('updateLoaderState', true)
 
-        axios
-            .post(url, formData, {
-                cancelToken: source.token,
+        try {
+            const response = await axios.post(url, formData, {
+                signal: abortController.signal,
                 onUploadProgress: (progressEvent) =>
                     dispatch('downloadProgress', {
                         progressEvent,
@@ -101,41 +119,45 @@ export const actions: ActionTree<EditorState, RootState> = {
                         filesize: null,
                     }),
             })
-            .then((response) => {
-                return response.data
-            })
-            .then((data) => {
+            const data = response.data
+            if (state.abortController !== abortController) return
+
+            Vue.$toast.success(i18n.t('Editor.SuccessfullySaved', { filename: data.item.path }).toString())
+
+            if (payload.restartServiceName === 'klipper') {
+                const klipperRestartMethod = rootState.gui?.editor?.klipperRestartMethod ?? 'FIRMWARE_RESTART'
+                Vue.$socket.emit('printer.gcode.script', { script: klipperRestartMethod })
+            } else if (payload.restartServiceName === 'moonraker') {
+                Vue.$socket.emit('server.restart', {})
+            } else if (payload.restartServiceName !== null) {
+                Vue.$socket.emit('machine.services.restart', { service: payload.restartServiceName })
+            }
+
+            commit('updateLoadedHash', payload.content)
+
+            if (payload.restartServiceName !== null) dispatch('close')
+        } catch (error) {
+            if (axios.isCancel(error)) return
+
+            logError(error)
+            Vue.$toast.error(i18n.t('Editor.FailedSave', { filename: state.filename }).toString())
+        } finally {
+            if (state.abortController === abortController) {
+                commit('updateAbortController', null)
                 dispatch('clearLoader')
-                Vue.$toast.success(i18n.t('Editor.SuccessfullySaved', { filename: data.item.path }).toString())
-                if (payload.restartServiceName === 'klipper') {
-                    const klipperRestartMethod = getters['getKlipperRestartMethod']
-                    Vue.$socket.emit('printer.gcode.script', { script: klipperRestartMethod })
-                } else if (payload.restartServiceName === 'moonraker') {
-                    Vue.$socket.emit('server.restart', {})
-                } else if (payload.restartServiceName !== null) {
-                    Vue.$socket.emit('machine.services.restart', { service: payload.restartServiceName })
-                }
-
-                commit('updateLoadedHash', payload.content)
-
-                if (payload.restartServiceName !== null) dispatch('close')
-            })
-            .catch((error) => {
-                window.console.log(error.response?.data.error)
-                dispatch('clearLoader')
-                Vue.$toast.error(i18n.t('Editor.FailedSave', { filename: state.filename }).toString())
-            })
-    },
-
-    cancelLoad({ state, commit, dispatch }) {
-        if (state.cancelToken) {
-            state.cancelToken.cancel('User canceled upload/download')
-            commit('updateCancelTokenSource', null)
-            dispatch('clearLoader')
+            }
         }
     },
 
-    clearLoader({ commit }) {
+    cancelLoad({ state, commit, dispatch }): void {
+        if (!state.abortController) return
+
+        state.abortController.abort()
+        commit('updateAbortController', null)
+        dispatch('clearLoader')
+    },
+
+    clearLoader({ commit }): void {
         commit('updateLoaderState', false)
         commit('updateLoader', {
             direction: 'downloading',
@@ -145,13 +167,13 @@ export const actions: ActionTree<EditorState, RootState> = {
         })
     },
 
-    close({ commit }) {
-        commit('reset')
+    close({ dispatch }): void {
+        dispatch('reset')
 
         window.removeEventListener('beforeunload', windowBeforeUnloadFunction)
     },
 
-    updateSourcecode({ commit }, payload) {
+    updateSourcecode({ commit }, payload): void {
         commit('updateSourcecode', payload)
     },
 }
