@@ -6,19 +6,19 @@ import { spool } from './fixtures'
 describe('server/spoolman/mutations', () => {
     it('starts without Spoolman data', () => {
         expect(getDefaultState()).toEqual({
-            health: null,
+            connected: false,
             active_spool_id: null,
             active_spool: null,
             spools: [],
         })
     })
 
-    it('sets the health', () => {
+    it('sets the connection status', () => {
         const state = getDefaultState()
 
-        mutations.setHealth(state, 'healthy')
+        mutations.setConnected(state, true)
 
-        expect(state.health).toBe('healthy')
+        expect(state.connected).toBe(true)
     })
 
     it('sets the active spool ID and spool', () => {
@@ -43,7 +43,7 @@ describe('server/spoolman/mutations', () => {
 
     it('resets the state', () => {
         const state = getDefaultState()
-        mutations.setHealth(state, 'healthy')
+        mutations.setConnected(state, true)
         mutations.setActiveSpoolId(state, 1)
         mutations.setActiveSpool(state, spool(1))
         mutations.setSpools(state, [spool(1)])

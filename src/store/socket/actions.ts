@@ -124,6 +124,10 @@ export const actions: ActionTree<SocketState, RootState> = {
                 dispatch('server/spoolman/notifyActiveSpoolSet', payload.params[0], { root: true })
                 break
 
+            case 'notify_spoolman_status_changed':
+                dispatch('server/spoolman/notifySpoolmanStatusChanged', payload.params[0], { root: true })
+                break
+
             case 'notify_sensor_update':
                 dispatch('server/sensor/notifySensorUpdate', payload.params[0], { root: true })
                 break

@@ -73,16 +73,16 @@ export default class SpoolmanPanel extends Mixins(BaseMixin) {
     showChangeSpoolDialog = false
     showEjectSpoolDialog = false
 
-    get health(): string | null {
-        return this.$store.state.server.spoolman.health
+    get connected(): boolean {
+        return this.$store.state.server.spoolman.connected
     }
 
     get title() {
         const headline = this.$t('Panels.SpoolmanPanel.Headline') as string
 
-        if (this.health === null || this.health === 'healthy') return headline
+        if (this.connected) return headline
 
-        return `${headline} (${this.health})`
+        return `${headline} (${this.$t('Panels.SpoolmanPanel.Disconnected')})`
     }
 
     get changeSpoolTooltip(): string {

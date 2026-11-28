@@ -3,7 +3,11 @@ import { ActionTree } from 'vuex'
 import { RootState } from '@/store/types'
 import { ServerSpoolmanState } from '@/store/server/spoolman/types'
 import { isJsonRpcError } from '@/types/moonraker'
-import type { SpoolmanActiveSpoolSetNotification, SpoolmanHealth, SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import type {
+    SpoolmanActiveSpoolSetNotification,
+    SpoolmanSpool,
+    SpoolmanStatusChangedNotification,
+} from '@/types/moonraker/SpoolmanRPC'
 import type { EmitAndWaitOptions } from '@/plugins/webSocketClient'
 
 const LOG_PREFIX = '[Server][Spoolman]'
@@ -45,13 +49,14 @@ export const actions: ActionTree<ServerSpoolmanState, RootState> = {
         commit('reset')
     },
 
-    async init({ commit, dispatch }): Promise<void> {
+    async init({ commit, dispatch, state }): Promise<void> {
         logDebug('init')
 
         try {
-            const { spool_id } = await Vue.$socket.emitAndWait('server.spoolman.get_spool_id')
+            const status = await Vue.$socket.emitAndWait('server.spoolman.status')
 
-            commit('setActiveSpoolId', normalizeSpoolId(spool_id))
+            commit('setActiveSpoolId', normalizeSpoolId(status.spool_id))
+            commit('setConnected', status.spoolman_connected)
         } catch (error) {
             // connection loss, timeouts etc. are handled by server/init
             if (!isJsonRpcError(error)) throw error
@@ -62,26 +67,45 @@ export const actions: ActionTree<ServerSpoolmanState, RootState> = {
             return
         }
 
+        // without a connection to Spoolman, the data is loaded by notifySpoolmanStatusChanged
+        if (!state.connected) return
+
         // Spoolman is an external server, so it being unreachable must not fail the init
-        const results = await Promise.allSettled([dispatch('refreshHealth'), dispatch('refreshActiveSpool')])
-        const errors = results
-            .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
-            .map((result) => result.reason as unknown)
+        try {
+            await dispatch('refreshActiveSpool')
+        } catch (error) {
+            if (!isSpoolmanRequestError(error)) throw error
 
-        const fatalError = errors.find((error) => !isSpoolmanRequestError(error))
-        if (fatalError) throw fatalError
-
-        if (errors.length) {
-            logError('Failed to load the Spoolman data:', ...errors)
-            Vue.$toast.error((errors[0] as { message: string }).message)
+            logError('Failed to load the active spool:', error)
+            Vue.$toast.error(error.message)
         }
 
         // HappyHare and AFC need the spools to display their spool data, but don't wait for the (possibly large) list
         dispatch('refreshSpools').catch((error) => logError('Failed to load the spools:', error))
     },
 
-    async notifyActiveSpoolSet({ commit, dispatch }, payload: SpoolmanActiveSpoolSetNotification): Promise<void> {
+    async notifySpoolmanStatusChanged({ commit, dispatch }, payload: SpoolmanStatusChangedNotification): Promise<void> {
+        commit('setConnected', payload.spoolman_connected)
+        if (!payload.spoolman_connected) return
+
+        // the spools could have changed while Spoolman was not available
+        const results = await Promise.allSettled([dispatch('refreshActiveSpool'), dispatch('refreshSpools')])
+        results
+            .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+            .forEach((result) => logError('Failed to load the Spoolman data after reconnecting:', result.reason))
+    },
+
+    async notifyActiveSpoolSet(
+        { commit, dispatch, state },
+        payload: SpoolmanActiveSpoolSetNotification
+    ): Promise<void> {
         commit('setActiveSpoolId', normalizeSpoolId(payload.spool_id))
+
+        // without a connection to Spoolman, the new spool is loaded by notifySpoolmanStatusChanged
+        if (!state.connected) {
+            if (state.active_spool?.id !== state.active_spool_id) commit('setActiveSpool', null)
+            return
+        }
 
         try {
             await dispatch('refreshActiveSpool')
@@ -89,12 +113,6 @@ export const actions: ActionTree<ServerSpoolmanState, RootState> = {
             logError('Failed to load the active spool:', error)
             if (isSpoolmanRequestError(error)) Vue.$toast.error(error.message)
         }
-    },
-
-    async refreshHealth({ commit }): Promise<void> {
-        const health = await fetchSpoolman<SpoolmanHealth>('/v1/health')
-
-        commit('setHealth', health.status)
     },
 
     /** Loads the active spool from Spoolman, or clears it if no spool is active. */

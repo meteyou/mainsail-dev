@@ -380,6 +380,8 @@ export default class App extends Mixins(BaseMixin, ThemeMixin) {
 
     async refreshSpoolman(): Promise<void> {
         if (!this.moonrakerComponents.includes('spoolman')) return
+        // the active spool is refreshed when the connection to Spoolman is established again
+        if (!this.$store.state.server.spoolman?.connected) return
 
         try {
             await this.$store.dispatch('server/spoolman/refreshActiveSpool')

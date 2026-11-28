@@ -7,7 +7,7 @@ import { RootState } from '@/store/types'
 
 export const getDefaultState = (): ServerSpoolmanState => {
     return {
-        health: null,
+        connected: false,
         active_spool_id: null,
         active_spool: null,
         spools: [],

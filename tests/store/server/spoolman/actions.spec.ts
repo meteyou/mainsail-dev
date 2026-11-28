@@ -25,7 +25,6 @@ const failure = (status_code: number, message: string): SpoolmanProxyResponse =>
 
 const spoolmanApi = (path: string): SpoolmanProxyResponse => {
     if (!spoolmanConnected) return failure(503, 'Spoolman server not available')
-    if (path === '/v1/health') return success({ status: 'healthy' })
     if (path === '/v1/spool') return success(spools)
 
     const id = Number(path.replace('/v1/spool/', ''))
@@ -59,6 +58,13 @@ const createStore = () =>
 
 const spoolmanState = (store: Store<unknown>) => (store.state as { spoolman: ServerSpoolmanState }).spoolman
 
+const createConnectedStore = () => {
+    const store = createStore()
+    store.commit('spoolman/setConnected', true)
+
+    return store
+}
+
 /** Waits for actions that are not awaited by the caller, e.g. the spool list in init */
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve))
 
@@ -77,7 +83,11 @@ describe('server/spoolman/actions', () => {
         spools = [spool(1), spool(2)]
 
         responders = {
-            'server.spoolman.get_spool_id': () => ({ spool_id: activeSpoolId }),
+            'server.spoolman.status': () => ({
+                spoolman_connected: spoolmanConnected,
+                pending_reports: [],
+                spool_id: activeSpoolId,
+            }),
             'server.spoolman.post_spool_id': (params) => {
                 if ('spool_id' in params && typeof params.spool_id !== 'number') {
                     throw { code: 400, message: 'Unable to convert argument [spool_id]' }
@@ -91,14 +101,14 @@ describe('server/spoolman/actions', () => {
     })
 
     describe('init', () => {
-        it('loads the active spool, the health and the spools', async () => {
+        it('loads the connection status, the active spool and the spools', async () => {
             const store = createStore()
 
             await store.dispatch('spoolman/init')
             await flushPromises()
 
             expect(spoolmanState(store)).toEqual({
-                health: 'healthy',
+                connected: true,
                 active_spool_id: 2,
                 active_spool: spools[1],
                 spools,
@@ -132,7 +142,7 @@ describe('server/spoolman/actions', () => {
             expect(addFailedInitComponent).toHaveBeenCalledWith('spoolman')
         })
 
-        it('shows one error and finishes the init when Spoolman is not available', async () => {
+        it('skips the Spoolman requests when Moonraker is not connected to Spoolman', async () => {
             spoolmanConnected = false
             const store = createStore()
 
@@ -140,13 +150,27 @@ describe('server/spoolman/actions', () => {
             await flushPromises()
 
             expect(spoolmanState(store)).toEqual({ ...getDefaultState(), active_spool_id: 2 })
-            expect(toastError).toHaveBeenCalledTimes(1)
-            expect(toastError).toHaveBeenCalledWith('Spoolman server not available')
+            expect(emitAndWait).not.toHaveBeenCalledWith('server.spoolman.proxy', expect.anything(), expect.anything())
+            expect(emitAndWait).toHaveBeenCalledTimes(1)
+            expect(toastError).not.toHaveBeenCalled()
+            expect(addFailedInitComponent).not.toHaveBeenCalled()
+        })
+
+        it('shows the Spoolman error and finishes the init when the active spool cannot be loaded', async () => {
+            activeSpoolId = 3
+            const store = createStore()
+
+            await expect(store.dispatch('spoolman/init')).resolves.toBeUndefined()
+            await flushPromises()
+
+            expect(spoolmanState(store).active_spool).toBeNull()
+            expect(spoolmanState(store).spools).toEqual(spools)
+            expect(toastError).toHaveBeenCalledWith('No spool with ID 3 found.')
             expect(addFailedInitComponent).not.toHaveBeenCalled()
         })
 
         it('propagates non RPC errors to the caller', async () => {
-            responders['server.spoolman.get_spool_id'] = () => {
+            responders['server.spoolman.status'] = () => {
                 throw new WebSocketClosedError()
             }
             const store = createStore()
@@ -168,7 +192,7 @@ describe('server/spoolman/actions', () => {
 
     describe('notifyActiveSpoolSet', () => {
         it('sets the active spool ID and loads the spool', async () => {
-            const store = createStore()
+            const store = createConnectedStore()
 
             await store.dispatch('spoolman/notifyActiveSpoolSet', { spool_id: 1 })
 
@@ -177,7 +201,7 @@ describe('server/spoolman/actions', () => {
         })
 
         it('clears the active spool', async () => {
-            const store = createStore()
+            const store = createConnectedStore()
             await store.dispatch('spoolman/notifyActiveSpoolSet', { spool_id: 1 })
 
             await store.dispatch('spoolman/notifyActiveSpoolSet', { spool_id: null })
@@ -187,7 +211,7 @@ describe('server/spoolman/actions', () => {
         })
 
         it('shows the Spoolman error instead of rejecting', async () => {
-            const store = createStore()
+            const store = createConnectedStore()
 
             await expect(store.dispatch('spoolman/notifyActiveSpoolSet', { spool_id: 3 })).resolves.toBeUndefined()
 
@@ -203,7 +227,7 @@ describe('server/spoolman/actions', () => {
 
                 return new Promise((resolve) => (answerSpool1 = () => resolve(spoolmanApi('/v1/spool/1'))))
             }
-            const store = createStore()
+            const store = createConnectedStore()
             const pending = store.dispatch('spoolman/notifyActiveSpoolSet', { spool_id: 1 })
 
             await store.dispatch('spoolman/notifyActiveSpoolSet', { spool_id: 2 })
@@ -211,6 +235,59 @@ describe('server/spoolman/actions', () => {
             await pending
 
             expect(spoolmanState(store).active_spool).toEqual(spools[1])
+        })
+
+        it('clears an outdated active spool without requesting Spoolman while it is disconnected', async () => {
+            const store = createConnectedStore()
+            await store.dispatch('spoolman/notifyActiveSpoolSet', { spool_id: 1 })
+            store.commit('spoolman/setConnected', false)
+            emitAndWait.mockClear()
+
+            await store.dispatch('spoolman/notifyActiveSpoolSet', { spool_id: 2 })
+
+            expect(spoolmanState(store).active_spool_id).toBe(2)
+            expect(spoolmanState(store).active_spool).toBeNull()
+            expect(emitAndWait).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('notifySpoolmanStatusChanged', () => {
+        it('sets the connection status without requesting Spoolman on a disconnect', async () => {
+            const store = createConnectedStore()
+
+            await store.dispatch('spoolman/notifySpoolmanStatusChanged', { spoolman_connected: false })
+
+            expect(spoolmanState(store).connected).toBe(false)
+            expect(emitAndWait).not.toHaveBeenCalled()
+        })
+
+        it('loads the active spool and the spools on a reconnect', async () => {
+            spoolmanConnected = false
+            const store = createStore()
+            await store.dispatch('spoolman/init')
+            spoolmanConnected = true
+
+            await store.dispatch('spoolman/notifySpoolmanStatusChanged', { spoolman_connected: true })
+
+            expect(spoolmanState(store)).toEqual({
+                connected: true,
+                active_spool_id: 2,
+                active_spool: spools[1],
+                spools,
+            })
+        })
+
+        it('logs errors instead of rejecting', async () => {
+            const store = createStore()
+            responders['server.spoolman.proxy'] = () => failure(500, 'Internal error')
+
+            await expect(
+                store.dispatch('spoolman/notifySpoolmanStatusChanged', { spoolman_connected: true })
+            ).resolves.toBeUndefined()
+
+            expect(spoolmanState(store).connected).toBe(true)
+            expect(windowStub.console.error).toHaveBeenCalledTimes(1)
+            expect(toastError).not.toHaveBeenCalled()
         })
     })
 

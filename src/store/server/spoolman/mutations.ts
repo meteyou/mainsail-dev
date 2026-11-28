@@ -9,8 +9,8 @@ export const mutations: MutationTree<ServerSpoolmanState> = {
         Object.assign(state, getDefaultState())
     },
 
-    setHealth(state, health: string | null): void {
-        Vue.set(state, 'health', health)
+    setConnected(state, connected: boolean): void {
+        Vue.set(state, 'connected', connected)
     },
 
     setActiveSpoolId(state, spoolId: number | null): void {

@@ -952,6 +952,7 @@
             "ActiveSpool": "Active Spool",
             "ChangeSpool": "Change Spool",
             "DaysAgo": "{days} days ago",
+            "Disconnected": "Disconnected",
             "EjectSpool": "Eject spool",
             "EjectSpoolQuestion": "Are you sure to eject the filament spool?",
             "Filament": "Filament",
