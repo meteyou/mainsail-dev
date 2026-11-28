@@ -41,6 +41,29 @@ describe('server/spoolman/mutations', () => {
         expect(state.spools).toBe(spools)
     })
 
+    it('replaces a spool without mutating the old list', () => {
+        const state = getDefaultState()
+        const first = spool(1)
+        const spools = [first, spool(2)]
+        mutations.setSpools(state, spools)
+        const updated = spool(2, { remaining_weight: 500 })
+
+        mutations.setSpool(state, updated)
+
+        expect(state.spools).toEqual([first, updated])
+        expect(state.spools[0]).toBe(first)
+        expect(spools[1]).toEqual(spool(2))
+    })
+
+    it('adds an unknown spool', () => {
+        const state = getDefaultState()
+        mutations.setSpools(state, [spool(1)])
+
+        mutations.setSpool(state, spool(3))
+
+        expect(state.spools.map((entry) => entry.id)).toEqual([1, 3])
+    })
+
     it('resets the state', () => {
         const state = getDefaultState()
         mutations.setConnected(state, true)

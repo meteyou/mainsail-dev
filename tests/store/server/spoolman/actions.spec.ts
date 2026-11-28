@@ -302,6 +302,20 @@ describe('server/spoolman/actions', () => {
             expect(spoolmanState(store).active_spool?.remaining_weight).toBe(500)
         })
 
+        it('updates the active spool in the spool list', async () => {
+            const store = createStore()
+            await store.dispatch('spoolman/init')
+            await flushPromises()
+            const unchanged = spoolmanState(store).spools[0]
+            spools = [spool(1, { remaining_weight: 900 }), spool(2, { remaining_weight: 500 })]
+
+            await store.dispatch('spoolman/refreshActiveSpool')
+
+            expect(spoolmanState(store).spools[0]).toBe(unchanged)
+            expect(spoolmanState(store).spools[1].remaining_weight).toBe(500)
+            expect(store.getters['spoolman/getSpool'](2)).toBe(spoolmanState(store).active_spool)
+        })
+
         it('rejects with a SpoolmanProxyError if Spoolman answers with an error', async () => {
             const store = createStore()
             await store.dispatch('spoolman/init')
