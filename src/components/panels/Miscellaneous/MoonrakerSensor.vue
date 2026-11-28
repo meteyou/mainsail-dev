@@ -22,7 +22,7 @@ import { convertName } from '@/plugins/helpers'
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import MoonrakerSensorValue from '@/components/panels/Miscellaneous/MoonrakerSensorValue.vue'
-import {} from '@mdi/js'
+import type { ServerSensor } from '@/store/server/sensor/types'
 
 @Component({
     components: { MoonrakerSensorValue },
@@ -32,24 +32,21 @@ export default class MoonrakerSensor extends Mixins(BaseMixin) {
 
     @Prop({ type: String, required: true }) declare readonly name: string
 
-    get sensor() {
-        const sensors = this.$store.state.server.sensor.sensors
-        if (!(this.name in sensors)) return undefined
-
-        return sensors[this.name]
+    get sensor(): ServerSensor | null {
+        return this.$store.getters['server/sensor/getSensor'](this.name)
     }
 
-    get displayName() {
+    get displayName(): string {
         // If the friendly name is the same as the sensor name, then it hasn't been customized in the config
         // this is the fallback value in Moonraker, so we convert the sensor name to a more user-friendly format
-        if (this.sensor === undefined || this.sensor?.friendly_name === this.name) {
+        if (this.sensor === null || this.sensor.friendly_name === this.name) {
             return this.convertName(this.name)
         }
 
-        return this.sensor?.friendly_name
+        return this.sensor.friendly_name
     }
 
-    get valueNames() {
+    get valueNames(): string[] {
         return Object.keys(this.sensor?.values ?? {})
     }
 }

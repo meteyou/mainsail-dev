@@ -1,4 +1,5 @@
 import { ServerPowerState } from '@/store/server/power/types'
+import { ServerSensorState } from '@/store/server/sensor/types'
 import { ServerUpdateManagerState } from '@/store/server/updateManager/types'
 import { ServerHistoryState } from '@/store/server/history/types'
 import { ServerTimelapseState } from '@/store/server/timelapse/types'
@@ -68,6 +69,7 @@ export interface ServerState {
     history?: ServerHistoryState
     jobQueue?: ServerJobQueueState
     power?: ServerPowerState
+    sensor?: ServerSensorState
     timelapse?: ServerTimelapseState
     updateManager?: ServerUpdateManagerState
 }

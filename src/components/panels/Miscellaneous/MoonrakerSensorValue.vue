@@ -10,6 +10,8 @@
 import { convertName, unitToSymbol } from '@/plugins/helpers'
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
+import type { ServerSensor } from '@/store/server/sensor/types'
+import type { SensorValues } from '@/types/moonraker/DevicesRPC'
 
 @Component
 export default class MoonrakerSensorValue extends Mixins(BaseMixin) {
@@ -19,11 +21,10 @@ export default class MoonrakerSensorValue extends Mixins(BaseMixin) {
     @Prop({ type: String, required: true }) declare readonly sensor: string
     @Prop({ type: String, required: true }) declare readonly valueName: string
 
-    get sensorData() {
-        const sensors = this.$store.state.server.sensor.sensors
-        if (!(this.sensor in sensors)) return {}
+    get sensorData(): SensorValues {
+        const sensor: ServerSensor | null = this.$store.getters['server/sensor/getSensor'](this.sensor)
 
-        return sensors[this.sensor].values
+        return sensor?.values ?? {}
     }
 
     get sensorConfig() {

@@ -1,14 +1,9 @@
+import type { SensorStatus } from '@/types/moonraker/DevicesRPC'
+
 export interface ServerSensorState {
-    sensors: {
-        [key: string]: ServerSensorStateSensor
-    }
+    /** Sensors keyed by the sensor ID */
+    sensors: Record<string, ServerSensor>
 }
 
-export interface ServerSensorStateSensor {
-    friendly_name: string
-    id: string
-    type: string
-    values: {
-        [key: string]: number
-    }
-}
+/** The store only requests the basic sensor status, so the `extended` fields are never present */
+export type ServerSensor = Omit<SensorStatus, 'parameter_info' | 'history_fields'>

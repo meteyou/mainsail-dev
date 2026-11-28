@@ -87,8 +87,8 @@ export default class MiscellaneousPanel extends Mixins(BaseMixin, MiscellaneousM
         return this.$store.getters['printer/getMiscellaneousSensors'] ?? []
     }
 
-    get moonrakerSensors() {
-        return this.$store.getters['server/sensor/getSensors'] ?? []
+    get moonrakerSensors(): string[] {
+        return this.$store.getters['server/sensor/sensorIds'] ?? []
     }
 
     get showMiscellaneousPanel() {

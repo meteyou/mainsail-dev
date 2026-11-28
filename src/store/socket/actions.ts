@@ -125,7 +125,7 @@ export const actions: ActionTree<SocketState, RootState> = {
                 break
 
             case 'notify_sensor_update':
-                dispatch('server/sensor/updateSensors', payload.params[0], { root: true })
+                dispatch('server/sensor/notifySensorUpdate', payload.params[0], { root: true })
                 break
 
             default:

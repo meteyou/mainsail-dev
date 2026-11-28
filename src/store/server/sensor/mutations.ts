@@ -1,20 +1,29 @@
 import Vue from 'vue'
 import { getDefaultState } from './index'
 import { MutationTree } from 'vuex'
-import { ServerSensorState } from '@/store/server/sensor/types'
+import { ServerSensor, ServerSensorState } from '@/store/server/sensor/types'
+import type { SensorUpdateNotification } from '@/types/moonraker/DevicesRPC'
 
 export const mutations: MutationTree<ServerSensorState> = {
-    reset(state) {
+    reset(state): void {
         Object.assign(state, getDefaultState())
     },
 
-    setSensors(state, payload) {
-        Vue.set(state, 'sensors', payload)
+    setSensors(state, sensors: Record<string, ServerSensor>): void {
+        Vue.set(state, 'sensors', sensors)
     },
 
-    updateSensor(state, payload) {
-        if (!(payload.key in state.sensors)) return
+    /** Replaces the values of the given sensors. Unknown sensors are ignored. */
+    setSensorValues(state, payload: SensorUpdateNotification): void {
+        const sensors = { ...state.sensors }
 
-        Vue.set(state.sensors[payload.key], 'values', payload.value)
+        for (const [id, values] of Object.entries(payload)) {
+            const sensor = sensors[id]
+            if (!sensor) continue
+
+            sensors[id] = { ...sensor, values }
+        }
+
+        Vue.set(state, 'sensors', sensors)
     },
 }
