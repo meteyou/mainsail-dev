@@ -228,7 +228,7 @@ export default class MmuEditGateMapDialogGateDetails extends Mixins(BaseMixin, M
             (val: string | number) => {
                 const numValue = typeof val === 'string' ? parseInt(val) : val
                 if (!numValue || numValue <= 0) return true
-                const spoolExists = this.getSpoolmanSpool(numValue) !== null
+                const spoolExists = this.$store.getters['server/spoolman/getSpool'](numValue) !== null
                 return spoolExists ? true : this.$t('Panels.MmuPanel.GateMapDialog.NoMatchingSpool')
             },
         ]
@@ -250,7 +250,7 @@ export default class MmuEditGateMapDialogGateDetails extends Mixins(BaseMixin, M
             return
         }
 
-        const spool = this.getSpoolmanSpool(spool_id)
+        const spool: SpoolmanSpool | null = this.$store.getters['server/spoolman/getSpool'](spool_id)
         if (!spool) return
 
         const name = String(spool?.filament?.name ?? this.$t('Panels.MmuPanel.Unknown')).replace(/["']/g, '')
@@ -364,11 +364,7 @@ export default class MmuEditGateMapDialogGateDetails extends Mixins(BaseMixin, M
     }
 
     get spoolmanSpool(): SpoolmanSpool | null {
-        return this.getSpoolmanSpool(this.spoolId)
-    }
-
-    getSpoolmanSpool(id: number): SpoolmanSpool | null {
-        return this.$store.getters['server/spoolman/getSpool'](id)
+        return this.$store.getters['server/spoolman/getSpool'](this.spoolId)
     }
 
     get spoolmanColor(): string {
