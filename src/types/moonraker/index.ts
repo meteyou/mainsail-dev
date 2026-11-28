@@ -11,6 +11,8 @@
  * - MachineRPC.ts     → https://moonraker.readthedocs.io/en/latest/external_api/machine/
  * - FileManagerRPC.ts → https://moonraker.readthedocs.io/en/latest/external_api/file_manager/
  * - DevicesRPC.ts     → https://moonraker.readthedocs.io/en/latest/external_api/devices/
+ * - SpoolmanRPC.ts    → https://moonraker.readthedocs.io/en/latest/external_api/integrations/#spoolman
+ *   (the integrations page covers several unrelated components, so it is split per component)
  * - etc.
  *
  * To add a new method:
@@ -36,6 +38,7 @@ import type { JobQueueRPC } from './JobQueueRPC'
 import type { MachineRPC } from './MachineRPC'
 import type { PrinterRPC } from './PrinterRPC'
 import type { ServerRPC } from './ServerRPC'
+import type { SpoolmanRPC } from './SpoolmanRPC'
 import type { WebcamRPC } from './WebcamRPC'
 
 /**
@@ -52,6 +55,7 @@ export interface MoonrakerRPCInterface
         MachineRPC,
         PrinterRPC,
         ServerRPC,
+        SpoolmanRPC,
         WebcamRPC {}
 
 /**
