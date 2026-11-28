@@ -171,7 +171,7 @@ export default class MmuUnitGateSpool extends Mixins(BaseMixin, MmuMixin) {
     get spoolName() {
         const mmuSpoolName = this.mmu?.gate_filament_name?.[this.gateIndex]
 
-        return this.spool?.name || mmuSpoolName || this.$t('Panels.MmuPanel.Unknown').toString()
+        return this.spool?.filament.name || mmuSpoolName || this.$t('Panels.MmuPanel.Unknown').toString()
     }
 
     get filamentColor() {
