@@ -57,7 +57,7 @@ import Panel from '@/components/ui/Panel.vue'
 import { mdiAdjust, mdiDotsVertical, mdiEject, mdiOpenInNew, mdiSwapVertical } from '@mdi/js'
 import SpoolmanChangeSpoolDialog from '@/components/dialogs/SpoolmanChangeSpoolDialog.vue'
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue'
-import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import { SpoolmanSpool } from '@/types/spoolman'
 import SpoolmanPanelActiveSpool from '@/components/panels/Spoolman/SpoolmanPanelActiveSpool.vue'
 
 @Component({

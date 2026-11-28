@@ -13,7 +13,7 @@
 <script lang="ts">
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
-import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import { SpoolmanSpool } from '@/types/spoolman'
 
 @Component({
     components: {},

@@ -117,7 +117,7 @@ import MmuMixin, {
     TOOL_GATE_BYPASS,
 } from '@/components/mixins/mmu'
 import { filamentTextColor } from '@/plugins/helpers'
-import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import { SpoolmanSpool } from '@/types/spoolman'
 
 @Component
 export default class MmuUnitGateSpool extends Mixins(BaseMixin, MmuMixin) {

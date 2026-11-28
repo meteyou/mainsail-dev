@@ -1,7 +1,7 @@
 import { GetterTree } from 'vuex'
 import { ServerSpoolmanState } from './types'
 import { RootState } from '@/store/types'
-import type { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import type { SpoolmanSpool } from '@/types/spoolman'
 
 export const getters: GetterTree<ServerSpoolmanState, RootState> = {
     getSpool:

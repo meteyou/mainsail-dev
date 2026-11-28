@@ -9,7 +9,7 @@
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import ControlMixin from '@/components/mixins/control'
-import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import { SpoolmanSpool } from '@/types/spoolman'
 
 @Component({
     components: {},

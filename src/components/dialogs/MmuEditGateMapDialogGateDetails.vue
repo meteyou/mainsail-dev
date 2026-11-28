@@ -178,7 +178,7 @@ import MmuMixin, {
     FILAMENT_SPEED_OVERRIDE_MIN,
     FILAMENT_SPEED_OVERRIDE_MAX,
 } from '@/components/mixins/mmu'
-import type { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import type { SpoolmanSpool } from '@/types/spoolman'
 import { mdiSpeedometer, mdiRestart, mdiMinus, mdiPlus, mdiAdjust } from '@mdi/js'
 import { Debounce } from 'vue-debounce-decorator'
 import { VColorPickerColor } from '@/types/vuetify'

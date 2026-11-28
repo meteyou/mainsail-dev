@@ -39,7 +39,7 @@ import BaseMixin from '@/components/mixins/base'
 import { FileStateGcodefile } from '@/store/files/types'
 import SettingsRow from '@/components/settings/SettingsRow.vue'
 import { mdiPrinter3d } from '@mdi/js'
-import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import { SpoolmanSpool } from '@/types/spoolman'
 import AfcMixin from '@/components/mixins/afc'
 
 @Component({

@@ -46,7 +46,7 @@
 import Component from 'vue-class-component'
 import { Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
-import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import { SpoolmanSpool } from '@/types/spoolman'
 import AfcMixin from '@/components/mixins/afc'
 @Component({})
 export default class SpoolmanChangeSpoolDialogRow extends Mixins(BaseMixin, AfcMixin) {

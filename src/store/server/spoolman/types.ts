@@ -1,4 +1,4 @@
-import type { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import type { SpoolmanSpool } from '@/types/spoolman'
 
 export interface ServerSpoolmanState {
     /** Moonraker has an established connection to the Spoolman server */

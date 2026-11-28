@@ -48,7 +48,7 @@
 import Component from 'vue-class-component'
 import { Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
-import { SpoolmanFilament } from '@/types/moonraker/SpoolmanRPC'
+import { SpoolmanFilament } from '@/types/spoolman'
 
 interface RadialSegment {
     color: string

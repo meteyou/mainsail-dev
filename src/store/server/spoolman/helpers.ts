@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import { isJsonRpcError } from '@/types/moonraker'
 import type { JsonRpcError } from '@/types/moonraker'
+import type { SpoolmanGetPath, SpoolmanGetResult } from '@/types/spoolman'
 
 /*
  * Logging
@@ -40,8 +41,11 @@ export const normalizeSpoolId = (spoolId: number | null): number | null => (spoo
  * Requests
  */
 
-/** Sends a GET request to the Spoolman API. Rejects with a SpoolmanProxyError if Spoolman answers with an error. */
-export const fetchSpoolman = async <T>(path: string): Promise<T> => {
+/**
+ * Sends a GET request to the Spoolman API, the response type is inferred from the path.
+ * Rejects with a SpoolmanProxyError if Spoolman answers with an error.
+ */
+export const fetchSpoolman = async <P extends SpoolmanGetPath>(path: P): Promise<SpoolmanGetResult<P>> => {
     const result = await Vue.$socket.emitAndWait('server.spoolman.proxy', {
         use_v2_response: true,
         request_method: 'GET',
@@ -49,5 +53,6 @@ export const fetchSpoolman = async <T>(path: string): Promise<T> => {
     })
     if (result.error) throw new SpoolmanProxyError(result.error.status_code, result.error.message)
 
-    return result.response as T
+    // the proxy can't know the response type of the requested path
+    return result.response as SpoolmanGetResult<P>
 }

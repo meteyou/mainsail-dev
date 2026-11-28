@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { getters } from '@/store/server/spoolman/getters'
 import { getDefaultState } from '@/store/server/spoolman'
 import type { RootState } from '@/store/types'
-import type { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import type { SpoolmanSpool } from '@/types/spoolman'
 import { spool } from './fixtures'
 
 const callGetter = <T>(name: string, spools: SpoolmanSpool[]): T => {

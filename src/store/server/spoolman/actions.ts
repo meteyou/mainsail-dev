@@ -12,7 +12,6 @@ import {
 import { isJsonRpcError } from '@/types/moonraker'
 import type {
     SpoolmanActiveSpoolSetNotification,
-    SpoolmanSpool,
     SpoolmanStatusChangedNotification,
 } from '@/types/moonraker/SpoolmanRPC'
 
@@ -95,7 +94,7 @@ export const actions: ActionTree<ServerSpoolmanState, RootState> = {
             return
         }
 
-        const spool = await fetchSpoolman<SpoolmanSpool>(`/v1/spool/${spoolId}`)
+        const spool = await fetchSpoolman(`/v1/spool/${spoolId}`)
 
         // keep the spool list up to date, because Moonraker only reports the usage of the active spool
         commit('setSpool', spool)
@@ -107,7 +106,7 @@ export const actions: ActionTree<ServerSpoolmanState, RootState> = {
     },
 
     async refreshSpools({ commit }): Promise<void> {
-        const spools = await fetchSpoolman<SpoolmanSpool[]>('/v1/spool')
+        const spools = await fetchSpoolman('/v1/spool')
 
         commit('setSpools', spools)
     },

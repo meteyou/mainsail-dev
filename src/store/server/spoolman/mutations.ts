@@ -2,7 +2,7 @@ import Vue from 'vue'
 import { getDefaultState } from './index'
 import { MutationTree } from 'vuex'
 import { ServerSpoolmanState } from './types'
-import type { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import type { SpoolmanSpool } from '@/types/spoolman'
 
 export const mutations: MutationTree<ServerSpoolmanState> = {
     reset(state): void {

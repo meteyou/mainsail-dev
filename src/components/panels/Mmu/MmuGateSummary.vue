@@ -19,7 +19,7 @@
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import MmuMixin, { TOOL_GATE_BYPASS } from '@/components/mixins/mmu'
-import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
+import { SpoolmanSpool } from '@/types/spoolman'
 
 @Component({})
 export default class MmuGateSummary extends Mixins(BaseMixin, MmuMixin) {
