@@ -37,7 +37,7 @@ import TheUpdateDialog from '@/components/TheUpdateDialog.vue'
 import TheConnectingDialog from '@/components/TheConnectingDialog.vue'
 import TheSelectPrinterDialog from '@/components/TheSelectPrinterDialog.vue'
 import TheEditor from '@/components/TheEditor.vue'
-import { panelToolbarHeight, topbarHeight, navigationItemHeight } from '@/store/variables'
+import { panelToolbarHeight, topbarHeight, navigationItemHeight, spoolmanRefreshInterval } from '@/store/variables'
 import TheTimelapseRenderingSnackbar from '@/components/TheTimelapseRenderingSnackbar.vue'
 import TheFullscreenUpload from '@/components/TheFullscreenUpload.vue'
 import TheUploadSnackbar from '@/components/TheUploadSnackbar.vue'
@@ -67,6 +67,8 @@ import { AppRoute } from '@/routes'
     },
 })
 export default class App extends Mixins(BaseMixin, ThemeMixin) {
+    spoolmanRefreshTimer: number | null = null
+
     get title(): string {
         let title = this.$store.getters['getTitle']
 
@@ -370,12 +372,31 @@ export default class App extends Mixins(BaseMixin, ThemeMixin) {
     @Watch('print_percent')
     print_percentChanged(newVal: number): void {
         this.drawFavicon(newVal)
-        this.refreshSpoolman()
     }
 
     @Watch('printerIsPrinting')
     printerIsPrintingChanged(): void {
         this.drawFavicon(this.print_percent)
+    }
+
+    @Watch('printerIsPrintingOnly', { immediate: true })
+    printerIsPrintingOnlyChanged(newVal: boolean, oldVal?: boolean): void {
+        this.stopSpoolmanRefresh()
+
+        if (newVal) {
+            this.spoolmanRefreshTimer = window.setInterval(() => this.refreshSpoolman(), spoolmanRefreshInterval)
+            return
+        }
+
+        // load the usage since the last refresh, when the print is paused or finished
+        if (oldVal) this.refreshSpoolman()
+    }
+
+    stopSpoolmanRefresh(): void {
+        if (this.spoolmanRefreshTimer === null) return
+
+        window.clearInterval(this.spoolmanRefreshTimer)
+        this.spoolmanRefreshTimer = null
     }
 
     async refreshSpoolman(): Promise<void> {
@@ -402,6 +423,10 @@ export default class App extends Mixins(BaseMixin, ThemeMixin) {
         this.appHeight()
         window.addEventListener('resize', this.appHeight)
         window.addEventListener('orientationchange', this.appHeight)
+    }
+
+    beforeDestroy(): void {
+        this.stopSpoolmanRefresh()
     }
 }
 </script>

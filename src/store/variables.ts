@@ -67,6 +67,12 @@ export const maxEventHistory = 500
 export const maxGcodeHistory = 50
 
 /*
+ * Moonraker reports the filament usage to Spoolman, but doesn't notify about it,
+ * so the active spool is polled while printing (in ms)
+ */
+export const spoolmanRefreshInterval = 30_000
+
+/*
  * List of generic dashboard panels
  */
 export const allDashboardPanels = [
