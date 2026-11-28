@@ -156,7 +156,7 @@ interface EmitOptions {
     loading?: string | null
 }
 
-export interface EmitAndWaitOptions {
+interface EmitAndWaitOptions {
     loading?: string | null
     timeout?: number
 }

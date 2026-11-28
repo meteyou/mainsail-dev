@@ -8,7 +8,6 @@ import type {
     SpoolmanSpool,
     SpoolmanStatusChangedNotification,
 } from '@/types/moonraker/SpoolmanRPC'
-import type { EmitAndWaitOptions } from '@/plugins/webSocketClient'
 
 const LOG_PREFIX = '[Server][Spoolman]'
 const logDebug = (...args: unknown[]) => window.console.debug(LOG_PREFIX, ...args)
@@ -33,12 +32,12 @@ const isSpoolmanRequestError = (error: unknown): error is SpoolmanProxyError | {
 const normalizeSpoolId = (spoolId: number | null): number | null => (spoolId ? spoolId : null)
 
 /** Sends a GET request to the Spoolman API. Rejects with a SpoolmanProxyError if Spoolman answers with an error. */
-const fetchSpoolman = async <T>(path: string, options?: EmitAndWaitOptions): Promise<T> => {
-    const result = await Vue.$socket.emitAndWait(
-        'server.spoolman.proxy',
-        { use_v2_response: true, request_method: 'GET', path },
-        options
-    )
+const fetchSpoolman = async <T>(path: string): Promise<T> => {
+    const result = await Vue.$socket.emitAndWait('server.spoolman.proxy', {
+        use_v2_response: true,
+        request_method: 'GET',
+        path,
+    })
     if (result.error) throw new SpoolmanProxyError(result.error.status_code, result.error.message)
 
     return result.response as T
@@ -135,7 +134,7 @@ export const actions: ActionTree<ServerSpoolmanState, RootState> = {
     },
 
     async refreshSpools({ commit }): Promise<void> {
-        const spools = await fetchSpoolman<SpoolmanSpool[]>('/v1/spool', { loading: 'refreshSpools' })
+        const spools = await fetchSpoolman<SpoolmanSpool[]>('/v1/spool')
 
         commit('setSpools', spools)
     },

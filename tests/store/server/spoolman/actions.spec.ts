@@ -113,11 +113,11 @@ describe('server/spoolman/actions', () => {
                 active_spool: spools[1],
                 spools,
             })
-            expect(emitAndWait).toHaveBeenCalledWith(
-                'server.spoolman.proxy',
-                { use_v2_response: true, request_method: 'GET', path: '/v1/spool' },
-                { loading: 'refreshSpools' }
-            )
+            expect(emitAndWait).toHaveBeenCalledWith('server.spoolman.proxy', {
+                use_v2_response: true,
+                request_method: 'GET',
+                path: '/v1/spool',
+            })
         })
 
         it('treats the spool ID 0 as no active spool', async () => {
@@ -150,8 +150,7 @@ describe('server/spoolman/actions', () => {
             await flushPromises()
 
             expect(spoolmanState(store)).toEqual({ ...getDefaultState(), active_spool_id: 2 })
-            expect(emitAndWait).not.toHaveBeenCalledWith('server.spoolman.proxy', expect.anything(), expect.anything())
-            expect(emitAndWait).toHaveBeenCalledTimes(1)
+            expect(emitAndWait.mock.calls.map(([method]) => method)).toEqual(['server.spoolman.status'])
             expect(toastError).not.toHaveBeenCalled()
             expect(addFailedInitComponent).not.toHaveBeenCalled()
         })

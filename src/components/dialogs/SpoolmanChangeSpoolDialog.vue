@@ -31,7 +31,7 @@
                 <v-btn
                     :title="$t('Panels.SpoolmanPanel.Refresh')"
                     class="px-2 minwidth-0 ml-3"
-                    :loading="loadings.includes('refreshSpools')"
+                    :loading="isRefreshing"
                     @click="refreshSpools">
                     <v-icon>{{ mdiRefresh }}</v-icon>
                 </v-btn>
@@ -97,6 +97,7 @@ export default class SpoolmanChangeSpoolDialog extends Mixins(BaseMixin) {
     @Prop({ required: false, default: true }) declare readonly setActiveSpool?: boolean
 
     search = ''
+    isRefreshing = false
 
     get spools(): SpoolmanSpool[] {
         return this.$store.state.server.spoolman.spools ?? []
@@ -157,11 +158,15 @@ export default class SpoolmanChangeSpoolDialog extends Mixins(BaseMixin) {
     }
 
     async refreshSpools() {
+        this.isRefreshing = true
+
         try {
             await this.$store.dispatch('server/spoolman/refreshSpools')
         } catch (e) {
             window.console.error('[SpoolmanChangeSpoolDialog] Failed to load the spools', e)
             this.$toast.error((e as Error).message)
+        } finally {
+            this.isRefreshing = false
         }
     }
 
