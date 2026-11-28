@@ -1,5 +1,6 @@
 import { ServerPowerState } from '@/store/server/power/types'
 import { ServerSensorState } from '@/store/server/sensor/types'
+import { ServerSpoolmanState } from '@/store/server/spoolman/types'
 import { ServerUpdateManagerState } from '@/store/server/updateManager/types'
 import { ServerHistoryState } from '@/store/server/history/types'
 import { ServerTimelapseState } from '@/store/server/timelapse/types'
@@ -70,6 +71,7 @@ export interface ServerState {
     jobQueue?: ServerJobQueueState
     power?: ServerPowerState
     sensor?: ServerSensorState
+    spoolman?: ServerSpoolmanState
     timelapse?: ServerTimelapseState
     updateManager?: ServerUpdateManagerState
 }

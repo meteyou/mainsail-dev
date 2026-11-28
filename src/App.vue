@@ -378,9 +378,13 @@ export default class App extends Mixins(BaseMixin, ThemeMixin) {
         this.drawFavicon(this.print_percent)
     }
 
-    refreshSpoolman(): void {
-        if (this.moonrakerComponents.includes('spoolman')) {
-            this.$store.dispatch('server/spoolman/refreshActiveSpool', null, { root: true })
+    async refreshSpoolman(): Promise<void> {
+        if (!this.moonrakerComponents.includes('spoolman')) return
+
+        try {
+            await this.$store.dispatch('server/spoolman/refreshActiveSpool')
+        } catch (e) {
+            window.console.error('[App] Failed to refresh the active spool', e)
         }
     }
 

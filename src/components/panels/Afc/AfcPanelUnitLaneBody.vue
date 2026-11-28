@@ -63,7 +63,7 @@
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import AfcMixin from '@/components/mixins/afc'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 import { afcIconInfintiy } from '@/plugins/afcIcons'
 import AfcUnitLaneInfiniteDialog from '@/components/dialogs/AfcUnitLaneInfiniteDialog.vue'
 import AfcUnitLaneFilamentDialog from '@/components/dialogs/AfcUnitLaneFilamentDialog.vue'
@@ -95,16 +95,14 @@ export default class AfcPanelUnitLaneBody extends Mixins(BaseMixin, AfcMixin) {
         return Number(this.lane.spool_id || '0')
     }
 
-    get spool(): ServerSpoolmanStateSpool | null {
+    get spool(): SpoolmanSpool | null {
         if (this.spoolId === 0) return null
 
         // active_spool is kept live via websocket, unlike the static spools list below
         const activeSpool = this.$store.state.server.spoolman?.active_spool
         if (activeSpool?.id === this.spoolId) return activeSpool
 
-        const spools = this.$store.state.server.spoolman?.spools || []
-
-        return spools.find((spool: ServerSpoolmanStateSpool) => spool.id === this.spoolId) || null
+        return this.$store.getters['server/spoolman/getSpool'](this.spoolId)
     }
 
     get spoolFilamentHeadline(): string {

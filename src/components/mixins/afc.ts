@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Component from 'vue-class-component'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 
 @Component
 export default class AfcMixin extends Vue {
@@ -138,8 +138,7 @@ export default class AfcMixin extends Vue {
     getAfcLaneFilament(laneName: string) {
         const lane = this.getAfcLaneObject(laneName)
         const spoolId = lane?.spool_id ?? 0
-        const spools = this.$store.state.server.spoolman?.spools || []
-        const spool = spools.find((spool: ServerSpoolmanStateSpool) => spool.id === spoolId) || null
+        const spool: SpoolmanSpool | null = this.$store.getters['server/spoolman/getSpool'](spoolId)
 
         return {
             color: lane?.color ?? '#000000',

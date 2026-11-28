@@ -117,7 +117,7 @@ import MmuMixin, {
     TOOL_GATE_BYPASS,
 } from '@/components/mixins/mmu'
 import { filamentTextColor } from '@/plugins/helpers'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 
 @Component
 export default class MmuUnitGateSpool extends Mixins(BaseMixin, MmuMixin) {
@@ -164,9 +164,8 @@ export default class MmuUnitGateSpool extends Mixins(BaseMixin, MmuMixin) {
         return this.mmu?.gate_spool_id?.[this.gateIndex] ?? -1
     }
 
-    get spool() {
-        const spools = this.$store.state.server.spoolman?.spools ?? []
-        return spools.find((spool: ServerSpoolmanStateSpool) => spool.id === this.spoolId) ?? null
+    get spool(): SpoolmanSpool | null {
+        return this.$store.getters['server/spoolman/getSpool'](this.spoolId)
     }
 
     get spoolName() {

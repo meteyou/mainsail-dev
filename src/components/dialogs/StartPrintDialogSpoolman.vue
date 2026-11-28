@@ -32,11 +32,8 @@ export default class StartPrintDialogSpoolman extends Mixins(BaseMixin) {
 
     showChangeSpoolDialog = false
 
-    get activeSpoolId() {
-        let spoolId = this.$store.state.server.spoolman?.active_spool_id ?? null
-        if (spoolId === 0) spoolId = null
-
-        return spoolId
+    get activeSpoolId(): number | null {
+        return this.$store.state.server.spoolman?.active_spool_id ?? null
     }
 
     get activeSpool() {

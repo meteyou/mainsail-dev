@@ -178,7 +178,7 @@ import MmuMixin, {
     FILAMENT_SPEED_OVERRIDE_MIN,
     FILAMENT_SPEED_OVERRIDE_MAX,
 } from '@/components/mixins/mmu'
-import type { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import type { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 import { mdiSpeedometer, mdiRestart, mdiMinus, mdiPlus, mdiAdjust } from '@mdi/js'
 import { Debounce } from 'vue-debounce-decorator'
 import { VColorPickerColor } from '@/types/vuetify'
@@ -223,22 +223,18 @@ export default class MmuEditGateMapDialogGateDetails extends Mixins(BaseMixin, M
         return this.$t('Panels.MmuPanel.GateMapDialog.SpoolmanOther', { mode: this.mmuSpoolmanSupport })
     }
 
-    get spoolmanSpools() {
-        return this.$store.state.server.spoolman?.spools ?? []
-    }
-
     get spoolIdRules() {
         return [
             (val: string | number) => {
                 const numValue = typeof val === 'string' ? parseInt(val) : val
                 if (!numValue || numValue <= 0) return true
-                const spoolExists = this.spoolmanSpools.some((spool: ServerSpoolmanStateSpool) => spool.id === numValue)
+                const spoolExists = this.getSpoolmanSpool(numValue) !== null
                 return spoolExists ? true : this.$t('Panels.MmuPanel.GateMapDialog.NoMatchingSpool')
             },
         ]
     }
 
-    get spoolId() {
+    get spoolId(): number {
         return this.mmu?.gate_spool_id[this.selectedGate] ?? -1
     }
 
@@ -254,12 +250,12 @@ export default class MmuEditGateMapDialogGateDetails extends Mixins(BaseMixin, M
             return
         }
 
-        const spool = this.spoolmanSpools.find((spool: ServerSpoolmanStateSpool) => spool.id === spool_id)
+        const spool = this.getSpoolmanSpool(spool_id)
         if (!spool) return
 
         const name = String(spool?.filament?.name ?? this.$t('Panels.MmuPanel.Unknown')).replace(/["']/g, '')
         const material = String(spool?.filament?.material ?? this.$t('Panels.MmuPanel.Unknown')).replace(/["']/g, '')
-        const color = this.formColorString(spool?.filament?.color_hex).slice(1)
+        const color = this.formColorString(spool?.filament?.color_hex ?? null).slice(1)
         const temperature = spool?.filament?.settings_extruder_temp ?? -1
 
         const gcode = `MMU_GATE_MAP GATE=${this.selectedGate} SPOOLID=${spool_id} NAME="${name}" MATERIAL="${material}" COLOR="${color}" TEMP=${temperature} QUIET=1`
@@ -367,8 +363,12 @@ export default class MmuEditGateMapDialogGateDetails extends Mixins(BaseMixin, M
         this.debounceSetMmuGateMap('speed', value)
     }
 
-    get spoolmanSpool() {
-        return this.spoolmanSpools.find((spool: ServerSpoolmanStateSpool) => spool.id === this.spoolId) ?? null
+    get spoolmanSpool(): SpoolmanSpool | null {
+        return this.getSpoolmanSpool(this.spoolId)
+    }
+
+    getSpoolmanSpool(id: number): SpoolmanSpool | null {
+        return this.$store.getters['server/spoolman/getSpool'](id)
     }
 
     get spoolmanColor(): string {
@@ -404,7 +404,7 @@ export default class MmuEditGateMapDialogGateDetails extends Mixins(BaseMixin, M
         const last_used = this.spoolmanSpool.last_used ?? null
         if (!last_used) return this.$t('Panels.SpoolmanPanel.Never')
 
-        const date = new Date(this.spoolmanSpool.last_used)
+        const date = new Date(last_used)
         const now = new Date()
         const diff = now.getTime() - date.getTime()
 
@@ -423,7 +423,7 @@ export default class MmuEditGateMapDialogGateDetails extends Mixins(BaseMixin, M
         this.filamentColor = newColor.hexa
     }
 
-    selectSpoolmanSpool(newSpool: ServerSpoolmanStateSpool) {
+    selectSpoolmanSpool(newSpool: SpoolmanSpool) {
         this.spoolId = newSpool.id
     }
 

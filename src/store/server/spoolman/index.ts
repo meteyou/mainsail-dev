@@ -7,18 +7,10 @@ import { RootState } from '@/store/types'
 
 export const getDefaultState = (): ServerSpoolmanState => {
     return {
-        health: '',
-        info: {
-            automatic_backups: false,
-            backups_dir: '',
-            data_dir: '',
-            debug_mode: false,
-            version: '',
-        },
+        health: null,
         active_spool_id: null,
         active_spool: null,
-        vendors: [],
-        feeds: [],
+        spools: [],
     }
 }
 

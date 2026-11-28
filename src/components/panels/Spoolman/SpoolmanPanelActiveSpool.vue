@@ -23,7 +23,7 @@ import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import Panel from '@/components/ui/Panel.vue'
 import SpoolmanChangeSpoolDialog from '@/components/dialogs/SpoolmanChangeSpoolDialog.vue'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 
 @Component({
     components: { Panel, SpoolmanChangeSpoolDialog },
@@ -56,7 +56,7 @@ export default class SpoolmanPanelActiveSpool extends Mixins(BaseMixin) {
         return 80
     }
 
-    get active_spool(): ServerSpoolmanStateSpool | null {
+    get active_spool(): SpoolmanSpool | null {
         return this.$store.state.server.spoolman.active_spool ?? null
     }
 

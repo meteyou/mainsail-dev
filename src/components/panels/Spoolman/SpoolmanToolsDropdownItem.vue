@@ -13,7 +13,7 @@
 <script lang="ts">
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 
 @Component({
     components: {},
@@ -47,7 +47,7 @@ export default class SpoolmanToolsDropdownItem extends Mixins(BaseMixin) {
         return this.spools.find((spool) => spool.id === this.spoolId) ?? null
     }
 
-    get spools(): ServerSpoolmanStateSpool[] {
+    get spools(): SpoolmanSpool[] {
         return this.$store.state.server.spoolman.spools ?? []
     }
 }

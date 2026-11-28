@@ -19,7 +19,7 @@
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import MmuMixin, { TOOL_GATE_BYPASS } from '@/components/mixins/mmu'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 
 @Component({})
 export default class MmuGateSummary extends Mixins(BaseMixin, MmuMixin) {
@@ -97,10 +97,8 @@ export default class MmuGateSummary extends Mixins(BaseMixin, MmuMixin) {
 
     // Only available with Spoolman...
 
-    get spoolmanSpool() {
-        const spools = this.$store.state.server.spoolman.spools ?? []
-
-        return spools.find((s: ServerSpoolmanStateSpool) => s.id === this.gateSpoolId) ?? null
+    get spoolmanSpool(): SpoolmanSpool | null {
+        return this.$store.getters['server/spoolman/getSpool'](this.gateSpoolId)
     }
 
     get vendorText() {

@@ -57,7 +57,7 @@ import Panel from '@/components/ui/Panel.vue'
 import { mdiAdjust, mdiDotsVertical, mdiEject, mdiOpenInNew, mdiSwapVertical } from '@mdi/js'
 import SpoolmanChangeSpoolDialog from '@/components/dialogs/SpoolmanChangeSpoolDialog.vue'
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 import SpoolmanPanelActiveSpool from '@/components/panels/Spoolman/SpoolmanPanelActiveSpool.vue'
 
 @Component({
@@ -73,14 +73,14 @@ export default class SpoolmanPanel extends Mixins(BaseMixin) {
     showChangeSpoolDialog = false
     showEjectSpoolDialog = false
 
-    get health() {
-        return this.$store.state.server.spoolman.health ?? ''
+    get health(): string | null {
+        return this.$store.state.server.spoolman.health
     }
 
     get title() {
         const headline = this.$t('Panels.SpoolmanPanel.Headline') as string
 
-        if (this.health === '' || this.health === 'healthy') return headline
+        if (this.health === null || this.health === 'healthy') return headline
 
         return `${headline} (${this.health})`
     }
@@ -91,7 +91,7 @@ export default class SpoolmanPanel extends Mixins(BaseMixin) {
         return this.$t('Panels.SpoolmanPanel.ChangeSpool') as string
     }
 
-    get active_spool(): ServerSpoolmanStateSpool | null {
+    get active_spool(): SpoolmanSpool | null {
         return this.$store.state.server.spoolman.active_spool ?? null
     }
 
@@ -109,8 +109,13 @@ export default class SpoolmanPanel extends Mixins(BaseMixin) {
         window.open(this.spoolManagerUrl, '_blank')
     }
 
-    ejectSpool() {
-        this.$store.dispatch('server/spoolman/setActiveSpool', null)
+    async ejectSpool() {
+        try {
+            await this.$store.dispatch('server/spoolman/setActiveSpool', null)
+        } catch (e) {
+            window.console.error('[SpoolmanPanel] Failed to eject the active spool', e)
+            this.$toast.error((e as Error).message)
+        }
     }
 }
 </script>

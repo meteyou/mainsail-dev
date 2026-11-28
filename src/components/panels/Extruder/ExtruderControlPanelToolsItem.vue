@@ -9,7 +9,7 @@
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import ControlMixin from '@/components/mixins/control'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 
 @Component({
     components: {},
@@ -45,10 +45,8 @@ export default class ExtruderControlPanel extends Mixins(BaseMixin, ControlMixin
         return this.macro?.spool_id ?? null
     }
 
-    get spool() {
-        const spools = this.$store.state.server.spoolman.spools ?? []
-
-        return spools.find((spool: ServerSpoolmanStateSpool) => spool.id === this.spoolId) ?? null
+    get spool(): SpoolmanSpool | null {
+        return this.$store.getters['server/spoolman/getSpool'](this.spoolId)
     }
 
     get primaryColor(): string {

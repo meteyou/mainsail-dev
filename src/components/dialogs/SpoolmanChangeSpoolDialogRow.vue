@@ -46,11 +46,11 @@
 import Component from 'vue-class-component'
 import { Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 import AfcMixin from '@/components/mixins/afc'
 @Component({})
 export default class SpoolmanChangeSpoolDialogRow extends Mixins(BaseMixin, AfcMixin) {
-    @Prop({ required: true }) declare readonly spool: ServerSpoolmanStateSpool
+    @Prop({ required: true }) declare readonly spool: SpoolmanSpool
     @Prop({ required: false }) declare readonly max_id_digits: number
 
     get color() {
@@ -123,7 +123,7 @@ export default class SpoolmanChangeSpoolDialogRow extends Mixins(BaseMixin, AfcM
         const last_used = this.spool.last_used ?? null
         if (!last_used) return this.$t('Panels.SpoolmanPanel.Never')
 
-        const date = new Date(this.spool.last_used)
+        const date = new Date(last_used)
         const now = new Date()
         const diff = now.getTime() - date.getTime()
 

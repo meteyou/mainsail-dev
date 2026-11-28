@@ -49,6 +49,7 @@ export const actions: ActionTree<ServerState, RootState> = {
         dispatch('jobQueue/reset')
         dispatch('power/reset')
         dispatch('sensor/reset')
+        dispatch('spoolman/reset')
         dispatch('updateManager/reset')
     },
 

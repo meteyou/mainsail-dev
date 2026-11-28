@@ -1,34 +1,27 @@
+import Vue from 'vue'
 import { getDefaultState } from './index'
 import { MutationTree } from 'vuex'
 import { ServerSpoolmanState } from './types'
-import Vue from 'vue'
+import type { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 
 export const mutations: MutationTree<ServerSpoolmanState> = {
-    reset(state) {
+    reset(state): void {
         Object.assign(state, getDefaultState())
     },
 
-    setActiveSpoolId(state, payload) {
-        Vue.set(state, 'active_spool_id', payload)
+    setHealth(state, health: string | null): void {
+        Vue.set(state, 'health', health)
     },
 
-    setActiveSpool(state, payload) {
-        Vue.set(state, 'active_spool', payload)
+    setActiveSpoolId(state, spoolId: number | null): void {
+        Vue.set(state, 'active_spool_id', spoolId)
     },
 
-    setHealth(state, payload) {
-        Vue.set(state, 'health', payload)
+    setActiveSpool(state, spool: SpoolmanSpool | null): void {
+        Vue.set(state, 'active_spool', spool)
     },
 
-    setInfo(state, payload) {
-        Vue.set(state, 'info', payload)
-    },
-
-    setVendors(state, payload) {
-        Vue.set(state, 'vendors', payload)
-    },
-
-    setSpools(state, payload) {
-        Vue.set(state, 'spools', payload)
+    setSpools(state, spools: SpoolmanSpool[]): void {
+        Vue.set(state, 'spools', spools)
     },
 }

@@ -78,7 +78,7 @@ import { Mixins, Prop, VModel, Watch } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import Panel from '@/components/ui/Panel.vue'
 import { mdiCloseThick, mdiAdjust, mdiDatabase, mdiMagnify, mdiRefresh, mdiEject } from '@mdi/js'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 import SpoolmanChangeSpoolDialogRow from '@/components/dialogs/SpoolmanChangeSpoolDialogRow.vue'
 @Component({
     components: { SpoolmanChangeSpoolDialogRow, Panel },
@@ -98,13 +98,13 @@ export default class SpoolmanChangeSpoolDialog extends Mixins(BaseMixin) {
 
     search = ''
 
-    get spools(): ServerSpoolmanStateSpool[] {
+    get spools(): SpoolmanSpool[] {
         return this.$store.state.server.spoolman.spools ?? []
     }
 
     get max_spool_id_digits(): number {
         const max_id = this.$store.state.server.spoolman.spools.reduce(
-            (x: number, s: ServerSpoolmanStateSpool) => Math.max(x, s.id),
+            (x: number, s: SpoolmanSpool) => Math.max(x, s.id),
             0
         )
 
@@ -152,19 +152,20 @@ export default class SpoolmanChangeSpoolDialog extends Mixins(BaseMixin) {
         window.open(this.spoolManagerUrl, '_blank')
     }
 
-    refresh() {
-        this.$store.dispatch('server/spoolman/refreshSpools')
-    }
-
     close() {
         this.showDialog = false
     }
 
-    refreshSpools() {
-        this.$store.dispatch('server/spoolman/refreshSpools')
+    async refreshSpools() {
+        try {
+            await this.$store.dispatch('server/spoolman/refreshSpools')
+        } catch (e) {
+            window.console.error('[SpoolmanChangeSpoolDialog] Failed to load the spools', e)
+            this.$toast.error((e as Error).message)
+        }
     }
 
-    customFilter(_value: unknown, search: string, item: ServerSpoolmanStateSpool): boolean {
+    customFilter(_value: unknown, search: string, item: SpoolmanSpool): boolean {
         if (search.trim().startsWith('web+spoolman:s-')) {
             const spoolId = parseInt(search.split('-')[1] ?? -1)
             return item.id === spoolId
@@ -189,7 +190,7 @@ export default class SpoolmanChangeSpoolDialog extends Mixins(BaseMixin) {
         return true
     }
 
-    setSpool(spool: ServerSpoolmanStateSpool) {
+    async setSpool(spool: SpoolmanSpool) {
         // If dialog is used for selection only, bypass setting of active spool and propogate event
         if (!this.setActiveSpool) {
             this.$emit('select-spool', spool)
@@ -229,12 +230,17 @@ export default class SpoolmanChangeSpoolDialog extends Mixins(BaseMixin) {
             return
         }
 
-        this.$store.dispatch('server/spoolman/setActiveSpool', spool.id)
-
         this.close()
+
+        try {
+            await this.$store.dispatch('server/spoolman/setActiveSpool', spool.id)
+        } catch (e) {
+            window.console.error(`[SpoolmanChangeSpoolDialog] Failed to set the active spool ${spool.id}`, e)
+            this.$toast.error((e as Error).message)
+        }
     }
 
-    setMacroVariable(spool: ServerSpoolmanStateSpool) {
+    setMacroVariable(spool: SpoolmanSpool) {
         // Set spool_id for tool
         this.sendGcode(`SET_GCODE_VARIABLE MACRO=${this.tool} VARIABLE=spool_id VALUE=${spool.id}`)
 
@@ -262,7 +268,7 @@ export default class SpoolmanChangeSpoolDialog extends Mixins(BaseMixin) {
     onShowDialogChanged(newVal: boolean) {
         if (!newVal) return
 
-        this.refresh()
+        this.refreshSpools()
         this.search = ''
     }
 }

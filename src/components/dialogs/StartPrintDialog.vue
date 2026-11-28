@@ -39,7 +39,7 @@ import BaseMixin from '@/components/mixins/base'
 import { FileStateGcodefile } from '@/store/files/types'
 import SettingsRow from '@/components/settings/SettingsRow.vue'
 import { mdiPrinter3d } from '@mdi/js'
-import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
+import { SpoolmanSpool } from '@/types/moonraker/SpoolmanRPC'
 import AfcMixin from '@/components/mixins/afc'
 
 @Component({
@@ -68,7 +68,7 @@ export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
         return this.afcExists || this.existsSpoolman || this.existsTimelapse
     }
 
-    get active_spool(): ServerSpoolmanStateSpool | null {
+    get active_spool(): SpoolmanSpool | null {
         return this.$store.state.server.spoolman.active_spool ?? null
     }
 
