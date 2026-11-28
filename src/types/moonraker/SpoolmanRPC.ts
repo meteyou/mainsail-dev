@@ -133,17 +133,21 @@ export interface SpoolmanActiveSpoolSetNotification {
     spool_id: number | null
 }
 
+/**
+ * Payload of the notify_spoolman_status_changed notification.
+ * Emitted when the connection status between Moonraker and Spoolman changes.
+ * @see https://moonraker.readthedocs.io/en/latest/external_api/jsonrpc_notifications/#spoolman-status-changed
+ */
+export interface SpoolmanStatusChangedNotification {
+    /** true if Moonraker is currently connected to the Spoolman server */
+    spoolman_connected: boolean
+}
+
 /*
  * Spoolman API objects, as returned through the proxy.
  * Spoolman omits fields with a null value, so nullable fields are optional.
  * @see https://donkie.github.io/Spoolman/
  */
-
-/** Response of the Spoolman `GET /v1/health` endpoint */
-export interface SpoolmanHealth {
-    /** Always `healthy` if Spoolman is reachable */
-    status: string
-}
 
 /** Spoolman Vendor */
 export interface SpoolmanVendor {
