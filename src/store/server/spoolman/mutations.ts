@@ -24,4 +24,14 @@ export const mutations: MutationTree<ServerSpoolmanState> = {
     setSpools(state, spools: SpoolmanSpool[]): void {
         Vue.set(state, 'spools', spools)
     },
+
+    /** Replaces a spool in the spool list or adds it, if it is unknown (e.g. created after loading the list) */
+    setSpool(state, spool: SpoolmanSpool): void {
+        const exists = state.spools.some((entry) => entry.id === spool.id)
+        const spools = exists
+            ? state.spools.map((entry) => (entry.id === spool.id ? spool : entry))
+            : [...state.spools, spool]
+
+        Vue.set(state, 'spools', spools)
+    },
 }

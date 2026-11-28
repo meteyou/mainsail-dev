@@ -125,6 +125,9 @@ export const actions: ActionTree<ServerSpoolmanState, RootState> = {
 
         const spool = await fetchSpoolman<SpoolmanSpool>(`/v1/spool/${spoolId}`)
 
+        // keep the spool list up to date, because Moonraker only reports the usage of the active spool
+        commit('setSpool', spool)
+
         // the active spool could have changed while waiting for the response
         if (state.active_spool_id !== spoolId) return
 
