@@ -2,46 +2,19 @@ import Vue from 'vue'
 import { ActionTree } from 'vuex'
 import { RootState } from '@/store/types'
 import { ServerSpoolmanState } from '@/store/server/spoolman/types'
+import {
+    fetchSpoolman,
+    isSpoolmanRequestError,
+    logDebug,
+    logError,
+    normalizeSpoolId,
+} from '@/store/server/spoolman/helpers'
 import { isJsonRpcError } from '@/types/moonraker'
 import type {
     SpoolmanActiveSpoolSetNotification,
     SpoolmanSpool,
     SpoolmanStatusChangedNotification,
 } from '@/types/moonraker/SpoolmanRPC'
-
-const LOG_PREFIX = '[Server][Spoolman]'
-const logDebug = (...args: unknown[]) => window.console.debug(LOG_PREFIX, ...args)
-const logError = (...args: unknown[]) => window.console.error(LOG_PREFIX, ...args)
-
-/** An error returned by Spoolman, or by Moonraker if Spoolman is not available, through the proxy */
-export class SpoolmanProxyError extends Error {
-    readonly statusCode: number
-
-    constructor(statusCode: number, message: string) {
-        super(message)
-        this.name = 'SpoolmanProxyError'
-        this.statusCode = statusCode
-    }
-}
-
-/** Errors that only affect the Spoolman data and must not abort the app init */
-const isSpoolmanRequestError = (error: unknown): error is SpoolmanProxyError | { message: string } =>
-    error instanceof SpoolmanProxyError || isJsonRpcError(error)
-
-/** Moonraker accepts 0 as spool ID, but Spoolman IDs start at 1, so 0 also means "no active spool" */
-const normalizeSpoolId = (spoolId: number | null): number | null => (spoolId ? spoolId : null)
-
-/** Sends a GET request to the Spoolman API. Rejects with a SpoolmanProxyError if Spoolman answers with an error. */
-const fetchSpoolman = async <T>(path: string): Promise<T> => {
-    const result = await Vue.$socket.emitAndWait('server.spoolman.proxy', {
-        use_v2_response: true,
-        request_method: 'GET',
-        path,
-    })
-    if (result.error) throw new SpoolmanProxyError(result.error.status_code, result.error.message)
-
-    return result.response as T
-}
 
 export const actions: ActionTree<ServerSpoolmanState, RootState> = {
     reset({ commit }): void {
